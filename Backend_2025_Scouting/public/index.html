@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team 589 Falkon Robotics - Scouting Dashboard</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            /* CVRobots/Falkon Robotics Color Scheme - Light Mode */
+            --primary-color: #080808;       /* Dark text from CVRobots */
+            --secondary-color: #116dff;     /* CVRobots primary blue */
+            --accent-color: #0056cc;        /* Darker blue for hover states */
+            --background-color: #ffffff;    /* Clean white background */
+            --light-gray: #f8f9fa;         /* Light backgrounds */
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+
+            /* Falkon-specific colors */
+            --falkon-blue: #116dff;
+            --falkon-dark: #080808;
+            --falkon-light: #f8f9fa;
+
+            /* Text colors */
+            --text-primary: #080808;
+            --text-secondary: #6c757d;
+            --card-bg: #ffffff;
+            --navbar-bg: #ffffff;
+            --border-color: #dee2e6;
+        }
+
+        [data-theme="dark"] {
+            /* Dark mode color overrides */
+            --primary-color: #e0e0e0;
+            --background-color: #1a1a1a;
+            --light-gray: #2d2d2d;
+            --falkon-dark: #e0e0e0;
+            --falkon-light: #2d2d2d;
+
+            /* Text colors */
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --card-bg: #2d2d2d;
+            --navbar-bg: #1f1f1f;
+            --border-color: #404040;
+        }
+
+        /* Dark mode specific overrides for Bootstrap text colors */
+        [data-theme="dark"] .text-success {
+            color: #5cd85c !important;
+        }
+
+        [data-theme="dark"] .text-danger {
+            color: #ff6b6b !important;
+        }
+
+        [data-theme="dark"] .text-warning {
+            color: #ffd93d !important;
+        }
+
+        [data-theme="dark"] .text-info {
+            color: #6bcfff !important;
+        }
+
+        [data-theme="dark"] .text-secondary {
+            color: #b0b0b0 !important;
+        }
+
+        [data-theme="dark"] .text-primary {
+            color: #6ba3ff !important;
+        }
+
+        [data-theme="dark"] .text-muted {
+            color: #a0a0a0 !important;
+        }
+
+        /* Dark mode - Activity log message text */
+        [data-theme="dark"] .log-message {
+            color: #d0d0d0 !important;
+        }
+
+        [data-theme="dark"] .log-entry {
+            border-bottom-color: #404040 !important;
+        }
+
+        /* Dark mode - Card body text */
+        [data-theme="dark"] .card-body p,
+        [data-theme="dark"] .card-body strong {
+            color: #d0d0d0 !important;
+        }
+
+        /* Dark mode - Card headers */
+        [data-theme="dark"] .card-header {
+            background: linear-gradient(135deg, #1a1a1a, #116dff) !important;
+        }
+
+        /* Dark mode - Table styling */
+        [data-theme="dark"] .table {
+            color: #d0d0d0;
+            background-color: transparent;
+        }
+
+        [data-theme="dark"] .table thead th {
+            background-color: #1a1a1a !important;
+            color: #e0e0e0 !important;
+            border-color: #404040 !important;
+        }
+
+        [data-theme="dark"] .table tbody tr {
+            border-color: #404040 !important;
+            background-color: #2d2d2d;
+        }
+
+        [data-theme="dark"] .table tbody td {
+            border-color: #404040 !important;
+            color: #d0d0d0 !important;
+            background-color: transparent;
+        }
+
+        [data-theme="dark"] .match-row:hover {
+            background-color: rgba(17, 109, 255, 0.2) !important;
+        }
+
+        [data-theme="dark"] .table-hover tbody tr:hover {
+            background-color: rgba(17, 109, 255, 0.2) !important;
+        }
+
+        /* Dark mode - Form floating labels and containers */
+        [data-theme="dark"] .form-floating {
+            background-color: transparent !important;
+        }
+
+        [data-theme="dark"] .form-floating > label {
+            color: #a0a0a0 !important;
+            background-color: #2d2d2d !important;
+        }
+
+        [data-theme="dark"] .form-floating > .form-control:focus ~ label,
+        [data-theme="dark"] .form-floating > .form-control:not(:placeholder-shown) ~ label,
+        [data-theme="dark"] .form-floating > .form-select ~ label {
+            color: #6ba3ff !important;
+            background-color: #2d2d2d !important;
+        }
+
+        /* Fix floating label for select - always keep it in "floated" position */
+        .form-floating > .form-select ~ label {
+            opacity: 0.65;
+            transform: scale(0.85) translateY(-2rem) translateX(0.15rem);
+            top: 0;
+        }
+
+        .form-floating > .form-select:focus ~ label {
+            opacity: 1;
+            transform: scale(0.85) translateY(-2rem) translateX(0.15rem);
+            top: 0;
+        }
+
+        [data-theme="dark"] .form-floating > .form-select ~ label {
+            color: #a0a0a0 !important;
+            opacity: 0.65;
+        }
+
+        [data-theme="dark"] .form-floating > .form-select:focus ~ label {
+            color: #6ba3ff !important;
+            opacity: 1;
+        }
+
+        [data-theme="dark"] .form-floating > .form-control,
+        [data-theme="dark"] .form-floating > .form-select {
+            background-color: #2d2d2d !important;
+            color: #d0d0d0 !important;
+            border-color: #404040 !important;
+        }
+
+        [data-theme="dark"] .form-floating > .form-control:focus,
+        [data-theme="dark"] .form-floating > .form-select:focus {
+            background-color: #2d2d2d !important;
+            color: #d0d0d0 !important;
+            border-color: #6ba3ff !important;
+            box-shadow: 0 0 0 0.25rem rgba(107, 163, 255, 0.25) !important;
+        }
+
+        /* Dark mode - Select dropdown options */
+        [data-theme="dark"] .form-select option {
+            background-color: #2d2d2d !important;
+            color: #d0d0d0 !important;
+        }
+
+        [data-theme="dark"] select option {
+            background-color: #2d2d2d !important;
+            color: #d0d0d0 !important;
+        }
+
+        /* Dark mode - Select dropdown arrow */
+        [data-theme="dark"] .form-select {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23d0d0d0' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+        }
+
+        /* Dark mode - All form controls and selects */
+        [data-theme="dark"] .form-control,
+        [data-theme="dark"] .form-select {
+            background-color: #2d2d2d !important;
+            color: #d0d0d0 !important;
+            border-color: #404040 !important;
+        }
+
+        /* Dark mode - Placeholder text */
+        [data-theme="dark"] .form-control::placeholder {
+            color: #808080 !important;
+            opacity: 1 !important;
+        }
+
+        /* Dark mode - Disabled state */
+        [data-theme="dark"] .form-control:disabled,
+        [data-theme="dark"] .form-select:disabled {
+            background-color: #1a1a1a !important;
+            color: #808080 !important;
+            opacity: 0.7 !important;
+        }
+
+        body {
+            background-color: var(--light-gray);
+            font-family: Arial, Helvetica, sans-serif;
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .navbar-brand {
+            font-weight: bold;
+            color: var(--falkon-dark) !important;
+        }
+
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            background-color: var(--card-bg);
+            transition: background-color 0.3s ease;
+        }
+
+        .navbar {
+            background-color: var(--navbar-bg) !important;
+            transition: background-color 0.3s ease;
+        }
+
+        .table {
+            color: var(--text-primary);
+        }
+
+        .form-control, .form-select {
+            background-color: var(--card-bg);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+
+        .form-label {
+            color: var(--text-primary);
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            color: var(--text-primary);
+        }
+
+        .dark-mode-toggle {
+            background: none;
+            border: 2px solid var(--falkon-blue);
+            color: var(--falkon-blue);
+            border-radius: 25px;
+            padding: 5px 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .dark-mode-toggle:hover {
+            background-color: var(--falkon-blue);
+            color: white;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--falkon-dark), var(--falkon-blue));
+            color: white;
+            border-radius: 10px 10px 0 0 !important;
+            font-weight: 600;
+        }
+
+        .nav-pills .nav-link {
+            border-radius: 25px;
+            margin: 0 5px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-pills .nav-link.active {
+            background: linear-gradient(135deg, var(--falkon-blue), var(--accent-color));
+        }
+
+        .nav-pills .nav-link:hover {
+            background-color: rgba(17, 109, 255, 0.1);
+        }
+
+        .table {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .table thead th {
+            background-color: var(--falkon-dark);
+            color: white;
+            border: none;
+            font-weight: 600;
+        }
+
+        .btn-custom {
+            border-radius: 25px;
+            padding: 8px 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary-custom {
+            background: linear-gradient(135deg, var(--falkon-blue), var(--accent-color));
+            border: none;
+        }
+
+        .btn-primary-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Dark mode - Button text visibility */
+        [data-theme="dark"] .btn-outline-primary,
+        [data-theme="dark"] .btn-outline-secondary,
+        [data-theme="dark"] .btn-outline-success,
+        [data-theme="dark"] .btn-outline-warning,
+        [data-theme="dark"] .btn-outline-info {
+            color: #d0d0d0 !important;
+            border-color: #6ba3ff !important;
+        }
+
+        [data-theme="dark"] .btn-outline-primary:hover {
+            background-color: #6ba3ff !important;
+            border-color: #6ba3ff !important;
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .btn-outline-success {
+            border-color: #5cd85c !important;
+            color: #5cd85c !important;
+        }
+
+        [data-theme="dark"] .btn-outline-success:hover {
+            background-color: #5cd85c !important;
+            border-color: #5cd85c !important;
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .btn-outline-warning {
+            border-color: #ffd93d !important;
+            color: #ffd93d !important;
+        }
+
+        [data-theme="dark"] .btn-outline-warning:hover {
+            background-color: #ffd93d !important;
+            border-color: #ffd93d !important;
+            color: #1a1a1a !important;
+        }
+
+        [data-theme="dark"] .btn-outline-secondary {
+            border-color: #808080 !important;
+            color: #d0d0d0 !important;
+        }
+
+        [data-theme="dark"] .btn-outline-secondary:hover {
+            background-color: #808080 !important;
+            border-color: #808080 !important;
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .btn-outline-info {
+            border-color: #6bcfff !important;
+            color: #6bcfff !important;
+        }
+
+        [data-theme="dark"] .btn-outline-info:hover {
+            background-color: #6bcfff !important;
+            border-color: #6bcfff !important;
+            color: #1a1a1a !important;
+        }
+
+        /* Ensure all button text is visible */
+        [data-theme="dark"] .btn {
+            color: #ffffff !important;
+        }
+
+        [data-theme="dark"] .btn-success {
+            background-color: #5cd85c !important;
+            border-color: #5cd85c !important;
+        }
+
+        [data-theme="dark"] .btn-warning {
+            background-color: #ffd93d !important;
+            border-color: #ffd93d !important;
+            color: #1a1a1a !important;
+        }
+
+        .stats-card {
+            background: linear-gradient(135deg, var(--falkon-blue) 0%, var(--accent-color) 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .stats-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stats-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+        }
+
+        /* TBA Info Box Styling */
+        .tba-info-box {
+            background-color: rgba(17, 109, 255, 0.05);
+            border: 1px solid rgba(17, 109, 255, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+
+        [data-theme="dark"] .tba-info-box {
+            background-color: rgba(17, 109, 255, 0.1);
+            border-color: rgba(17, 109, 255, 0.3);
+        }
+
+        .tba-info-box p {
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .tba-info-box strong {
+            color: var(--falkon-blue);
+        }
+
+        [data-theme="dark"] .tba-info-box p,
+        [data-theme="dark"] .tba-info-box strong,
+        [data-theme="dark"] .tba-info-box a {
+            color: #d0d0d0 !important;
+        }
+
+        [data-theme="dark"] .tba-info-box a {
+            color: #6ba3ff !important;
+        }
+
+        /* Alert Styling */
+        .alert-custom {
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+
+        .alert-info {
+            background-color: rgba(13, 202, 240, 0.1);
+            border-left-color: #0dcaf0;
+            color: var(--text-primary);
+        }
+
+        .alert-warning {
+            background-color: rgba(255, 193, 7, 0.1);
+            border-left-color: #ffc107;
+            color: var(--text-primary);
+        }
+
+        [data-theme="dark"] .alert-info {
+            background-color: rgba(13, 202, 240, 0.15);
+        }
+
+        [data-theme="dark"] .alert-warning {
+            background-color: rgba(255, 193, 7, 0.15);
+        }
+
+        [data-theme="dark"] .alert a {
+            color: #6ba3ff !important;
+        }
+
+        /* TBA Section Transitions */
+        .tba-section {
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .spinner-border-custom {
+            color: var(--falkon-blue);
+        }
+
+        .table-container {
+            max-height: 600px;
+            overflow-y: auto;
+            border-radius: 10px;
+        }
+
+        .badge-status {
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .form-floating > label {
+            color: var(--falkon-dark);
+        }
+
+        .alert-custom {
+            border-radius: 10px;
+            border: none;
+        }
+
+        .season-badge {
+            background: linear-gradient(135deg, var(--success-color), #2ecc71);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .regional-card {
+            border-left: 4px solid var(--falkon-blue);
+            margin-bottom: 15px;
+        }
+
+        .team-card {
+            transition: transform 0.3s ease;
+        }
+
+        .team-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .match-row {
+            transition: background-color 0.3s ease;
+        }
+
+        .match-row:hover {
+            background-color: rgba(17, 109, 255, 0.05);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-robot me-2" style="color: var(--falkon-blue);"></i>
+                <strong>Team 589</strong> Falkon Robotics
+            </a>
+            <div class="navbar-nav ms-auto d-flex align-items-center">
+                <button class="dark-mode-toggle me-3" onclick="toggleDarkMode()" id="darkModeToggle">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <span class="navbar-text">
+                    <i class="fas fa-database me-1"></i>
+                    <span id="connectionStatus" class="badge bg-secondary">Connecting...</span>
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container mt-4">
+        <!-- Statistics Overview -->
+        <div class="row mb-4">
+            <div class="col-md-9">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="stats-card">
+                            <div class="stats-number" id="totalTeams">-</div>
+                            <div class="stats-label">Total Teams</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stats-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                            <div class="stats-number" id="totalMatches">-</div>
+                            <div class="stats-label">Total Matches</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stats-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                            <div class="stats-number" id="totalRegionals">-</div>
+                            <div class="stats-label">Regionals</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <i class="fas fa-info-circle me-2"></i>System Info
+                    </div>
+                    <div class="card-body">
+                        <div id="systemInfo">
+                            <p class="mb-2"><strong>API Version:</strong> <span id="apiVersion">Loading...</span></p>
+                            <p class="mb-2"><strong>Supabase:</strong> <span id="dbStatus">Checking...</span></p>
+                            <p class="mb-2"><strong>TBA API:</strong> <span id="tbaStatus">Checking...</span></p>
+                            <p class="mb-0"><strong>Last Updated:</strong> <span id="lastUpdated">-</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <ul class="nav nav-pills mb-4" id="mainTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="overview-tab" data-bs-toggle="pill" data-bs-target="#overview" type="button" role="tab">
+                    <i class="fas fa-chart-line me-2"></i>Overview
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="teams-tab" data-bs-toggle="pill" data-bs-target="#teams" type="button" role="tab">
+                    <i class="fas fa-users me-2"></i>Teams
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="matches-tab" data-bs-toggle="pill" data-bs-target="#matches" type="button" role="tab">
+                    <i class="fas fa-trophy me-2"></i>Matches
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="statistics-tab" data-bs-toggle="pill" data-bs-target="#statistics" type="button" role="tab">
+                    <i class="fas fa-chart-bar me-2"></i>Statistics
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="data-entry-tab" data-bs-toggle="pill" data-bs-target="#data-entry" type="button" role="tab">
+                    <i class="fas fa-plus me-2"></i>Data Entry
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tba-tab" data-bs-toggle="pill" data-bs-target="#tba" type="button" role="tab">
+                    <i class="fas fa-download me-2"></i>TBA Import
+                </button>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content" id="mainTabContent">
+            <!-- Overview Tab -->
+            <div class="tab-pane fade show active" id="overview" role="tabpanel">
+                <div class="card" id="activityLogCard">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-server me-2"></i>Server Activity Log</span>
+                        <button class="btn btn-light btn-sm" onclick="loadRecentActivity()">
+                            <i class="fas fa-sync-alt me-1"></i>Refresh
+                        </button>
+                    </div>
+                    <div class="card-body" style="padding: 15px; overflow: hidden;">
+                        <div id="recentActivity" style="width: 100%; max-width: 100%;">
+                            <div class="text-center py-5">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status" style="width: 1.5rem; height: 1.5rem;">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="text-muted mt-2 mb-0" style="font-size: 0.9rem;">Loading server activity...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Teams Tab -->
+            <div class="tab-pane fade" id="teams" role="tabpanel">
+                <div class="card" id="teamsCard">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-users me-2"></i>Teams Database</span>
+                        <div>
+                            <select class="form-select form-select-sm me-2" id="teamRegionalFilter" style="width: auto; display: inline-block;">
+                                <option value="">All Regionals</option>
+                            </select>
+                            <button class="btn btn-light btn-sm" onclick="loadTeams()">
+                                <i class="fas fa-sync-alt me-1"></i>Refresh
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body" style="padding: 15px; overflow: hidden;">
+                        <div id="teamsContent" style="width: 100%; max-width: 100%;">
+                            <div class="text-center py-5">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status" style="width: 1.5rem; height: 1.5rem;">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="text-muted mt-2 mb-0" style="font-size: 0.9rem;">Loading teams...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Matches Tab -->
+            <div class="tab-pane fade" id="matches" role="tabpanel">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-trophy me-2"></i>Matches Database</span>
+                        <div>
+                            <select class="form-select form-select-sm me-2" id="matchRegionalFilter" style="width: auto; display: inline-block;">
+                                <option value="">All Regionals</option>
+                            </select>
+                            <button class="btn btn-light btn-sm" onclick="loadMatches()">
+                                <i class="fas fa-sync-alt me-1"></i>Refresh
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <div id="matchesContent" class="loading">
+                                <div class="spinner-border spinner-border-custom" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics Tab -->
+            <div class="tab-pane fade" id="statistics" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <i class="fas fa-cog me-2"></i>Statistics Controls
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="statsRegionalSelect" class="form-label">Select Regional:</label>
+                                    <select class="form-select" id="statsRegionalSelect">
+                                        <option value="">Select Regional...</option>
+                                    </select>
+                                </div>
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-primary-custom btn-custom" onclick="calculateAllStats()">
+                                        <i class="fas fa-calculator me-2"></i>Calculate All Statistics
+                                    </button>
+                                    <button class="btn btn-outline-primary btn-custom" onclick="loadRankings()">
+                                        <i class="fas fa-medal me-2"></i>View Rankings
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <i class="fas fa-chart-bar me-2"></i>Team Rankings
+                            </div>
+                            <div class="card-body">
+                                <div id="rankingsContent" class="text-center text-muted">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Select a regional to view rankings
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Entry Tab -->
+            <div class="tab-pane fade" id="data-entry" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <i class="fas fa-user-plus me-2"></i>Add New Team
+                            </div>
+                            <div class="card-body">
+                                <form id="addTeamForm">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-floating mb-3">
+                                                <input type="number" class="form-control" id="teamNumber" required>
+                                                <label for="teamNumber">Team Number</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-floating mb-3">
+                                                <input type="text" class="form-control" id="teamName">
+                                                <label for="teamName">Team Name</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-floating mb-3">
+                                        <input type="text" class="form-control" id="teamRegional" required>
+                                        <label for="teamRegional">Regional</label>
+                                    </div>
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-primary-custom btn-custom">
+                                            <i class="fas fa-plus me-2"></i>Add Team
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <i class="fas fa-trophy me-2"></i>Add New Match
+                            </div>
+                            <div class="card-body">
+                                <form id="addMatchForm">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-floating mb-3">
+                                                <select class="form-select" id="matchTeamId" required>
+                                                    <option value="">Select Team...</option>
+                                                </select>
+                                                <label for="matchTeamId">Team</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-floating mb-3">
+                                                <input type="number" class="form-control" id="matchNumber" required>
+                                                <label for="matchNumber">Match Number</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-floating mb-3">
+                                        <select class="form-select" id="startingPosition" required>
+                                            <option value="">Select Position...</option>
+                                            <option value="Amp">Amp</option>
+                                            <option value="Middle">Middle</option>
+                                            <option value="Source">Source</option>
+                                        </select>
+                                        <label for="startingPosition">Starting Position</label>
+                                    </div>
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-primary-custom btn-custom">
+                                            <i class="fas fa-plus me-2"></i>Add Match
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TBA Import Tab -->
+            <div class="tab-pane fade" id="tba" role="tabpanel">
+                <!-- Quick Actions Row -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <i class="fas fa-bolt me-2"></i>Quick Import Actions
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <button type="button" class="btn btn-outline-primary btn-custom w-100" onclick="showTBASection('team')">
+                                            <i class="fas fa-users me-2"></i>Import Single Team
+                                        </button>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <button type="button" class="btn btn-outline-info btn-custom w-100" onclick="showTBASection('matches')">
+                                            <i class="fas fa-clipboard-list me-2"></i>Import Team Matches
+                                        </button>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <button type="button" class="btn btn-outline-success btn-custom w-100" onclick="showTBASection('event')">
+                                            <i class="fas fa-calendar-alt me-2"></i>Import Event Teams
+                                        </button>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <button type="button" class="btn btn-outline-warning btn-custom w-100" onclick="showTBASection('full')">
+                                            <i class="fas fa-database me-2"></i>Full Event Import
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Team Import Section -->
+                <div class="row mb-4 tba-section" id="tba-team-section" style="display: none;">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <i class="fas fa-search me-2"></i>Import Single Team from The Blue Alliance
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <form id="tbaTeamForm">
+                                            <div class="form-floating mb-3">
+                                                <select class="form-select" id="tbaTeamNumber" required disabled>
+                                                    <option value="">Loading teams...</option>
+                                                </select>
+                                                <label for="tbaTeamNumber">Team Number</label>
+                                            </div>
+                                            <div class="form-floating mb-3">
+                                                <input type="text" class="form-control" id="tbaRegional" required placeholder="Orange County">
+                                                <label for="tbaRegional">Regional</label>
+                                            </div>
+                                            <div class="d-grid gap-2">
+                                                <button type="button" class="btn btn-outline-primary btn-custom" id="lookupTBAButton" disabled>
+                                                    <i class="fas fa-search me-2"></i>Lookup Team Info
+                                                </button>
+                                                <button type="submit" class="btn btn-primary-custom btn-custom" disabled id="saveTBATeam">
+                                                    <i class="fas fa-save me-2"></i>Save to Database
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <!-- Team Info Display -->
+                                        <div id="tbaTeamInfo" style="display: none;">
+                                            <h6 class="text-primary"><i class="fas fa-info-circle me-2"></i>Team Information</h6>
+                                            <div id="tbaTeamDetails" class="tba-info-box"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Team Matches Import Section -->
+                <div class="row mb-4 tba-section" id="tba-matches-section" style="display: none;">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <i class="fas fa-clipboard-list me-2"></i>Import Single Team Match Data by Event
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <form id="teamMatchesForm">
+                                            <div class="form-floating mb-3">
+                                                <select class="form-select" id="matchesSeasonSelect" required>
+                                                    <option value="">Select Season...</option>
+                                                    <option value="2025">2025</option>
+                                                    <option value="2024">2024</option>
+                                                    <option value="2023">2023</option>
+                                                    <option value="2022">2022</option>
+                                                    <option value="2021">2021</option>
+                                                    <option value="2020">2020</option>
+                                                </select>
+                                                <label for="matchesSeasonSelect">Season</label>
+                                            </div>
+                                            <div class="form-floating mb-3">
+                                                <select class="form-select" id="matchesTeamNumber" required disabled>
+                                                    <option value="">Select season first...</option>
+                                                </select>
+                                                <label for="matchesTeamNumber">Team Number</label>
+                                            </div>
+                                            <div class="form-floating mb-3">
+                                                <select class="form-select" id="matchesEventSelect" required disabled>
+                                                    <option value="">Select team and season first...</option>
+                                                </select>
+                                                <label for="matchesEventSelect">Event</label>
+                                            </div>
+                                            <div class="d-grid gap-2">
+                                                <button type="button" class="btn btn-outline-primary btn-custom" id="loadTeamEventsButton" disabled>
+                                                    <i class="fas fa-calendar me-2"></i>Load Events for Team
+                                                </button>
+                                                <button type="button" class="btn btn-outline-info btn-custom" id="lookupMatchesButton" disabled>
+                                                    <i class="fas fa-search me-2"></i>Lookup Matches
+                                                </button>
+                                                <button type="submit" class="btn btn-success btn-custom" disabled id="saveMatchesButton">
+                                                    <i class="fas fa-save me-2"></i>Save to Database
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <!-- Matches Info Display -->
+                                        <div id="teamMatchesInfo" style="display: none;">
+                                            <h6 class="text-info"><i class="fas fa-clipboard-list me-2"></i>Match Summary</h6>
+                                            <div id="teamMatchesDetails" class="tba-info-box" style="max-height: 500px; overflow-y: auto;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Event Teams Import Section -->
+                <div class="row mb-4 tba-section" id="tba-event-section" style="display: none;">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <i class="fas fa-calendar me-2"></i>Import Teams from Event
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-floating mb-3">
+                                            <select class="form-select" id="tbaEventSelect">
+                                                <option value="">Select Event...</option>
+                                            </select>
+                                            <label for="tbaEventSelect">2025 FRC Events</label>
+                                        </div>
+                                        <div class="form-floating mb-3">
+                                            <input type="text" class="form-control" id="eventRegional" required placeholder="Orange County">
+                                            <label for="eventRegional">Regional Name</label>
+                                        </div>
+                                        <div class="d-grid gap-2">
+                                            <button type="button" class="btn btn-outline-primary btn-custom" id="loadTBAEventsButton">
+                                                <i class="fas fa-sync me-2"></i>Load 2025 Events
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary btn-custom" onclick="previewEventTeams()" disabled id="previewEventBtn">
+                                                <i class="fas fa-eye me-2"></i>Preview Teams
+                                            </button>
+                                            <button type="button" class="btn btn-success btn-custom" onclick="importEventTeams()" disabled id="importEventBtn">
+                                                <i class="fas fa-download me-2"></i>Import All Teams
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <!-- Event Teams Preview -->
+                                        <div id="eventTeamsPreview" style="display: none;">
+                                            <h6 class="text-primary"><i class="fas fa-users me-2"></i>Teams in Event</h6>
+                                            <div id="eventTeamsList" class="tba-info-box" style="max-height: 400px; overflow-y: auto;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Full Event Import Section -->
+                <div class="row mb-4 tba-section" id="tba-full-section" style="display: none;">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <i class="fas fa-database me-2"></i>Full Event Import (Teams + Matches)
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-warning alert-custom mb-3">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <strong>Admin Feature:</strong> This imports complete event data including teams and match results.
+                                    Match data from TBA provides alliance-level statistics, so individual robot performance is estimated.
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <form id="fullEventImportForm">
+                                            <div class="form-floating mb-3">
+                                                <input type="text" class="form-control" id="fullEventKey" required placeholder="2024occ">
+                                                <label for="fullEventKey">Event Key (e.g., 2024occ)</label>
+                                            </div>
+                                            <div class="form-floating mb-3">
+                                                <input type="text" class="form-control" id="fullEventRegional" required placeholder="Orange County">
+                                                <label for="fullEventRegional">Regional Name</label>
+                                            </div>
+                                            <div class="d-grid gap-2">
+                                                <button type="submit" class="btn btn-warning btn-custom">
+                                                    <i class="fas fa-cloud-download-alt me-2"></i>Import Full Event Data
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div id="fullEventStatus" class="tba-info-box" style="display: none;">
+                                            <h6 class="text-warning"><i class="fas fa-spinner fa-spin me-2"></i>Import Progress</h6>
+                                            <div id="fullEventStatusDetails"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Team History Lookup -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <i class="fas fa-history me-2"></i>Team 589 Event History
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-floating mb-3">
+                                            <select class="form-select" id="historyYear">
+                                                <option value="">Select Year...</option>
+                                                <option value="2025">2025</option>
+                                                <option value="2024">2024</option>
+                                                <option value="2023">2023</option>
+                                                <option value="2022">2022</option>
+                                                <option value="2021">2021</option>
+                                                <option value="2020">2020</option>
+                                            </select>
+                                            <label for="historyYear">Year</label>
+                                        </div>
+                                        <div class="d-grid">
+                                            <button type="button" class="btn btn-outline-info btn-custom" onclick="loadTeamHistory()">
+                                                <i class="fas fa-search me-2"></i>View Event History
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <div id="teamHistoryResults" style="display: none;">
+                                            <h6 class="text-info"><i class="fas fa-calendar-check me-2"></i>Events</h6>
+                                            <div id="teamHistoryList" class="tba-info-box" style="max-height: 300px; overflow-y: auto;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="successToast" class="toast bg-success text-white" role="alert">
+            <div class="toast-body">
+                <i class="fas fa-check-circle me-2"></i>
+                <span id="successMessage">Success!</span>
+            </div>
+        </div>
+        <div id="errorToast" class="toast bg-danger text-white" role="alert">
+            <div class="toast-body">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                <span id="errorMessage">Error!</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html>
