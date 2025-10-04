@@ -11,7 +11,7 @@ This guide helps **FRC Team 589** run the scouting app demo during rookie week m
 ### Prerequisites
 
 Before the meeting, make sure you have:
-- Completed the `FRONTEND_SETUP_GUIDE.md` (covers Windows, macOS, and repository cloning)
+- Completed the `Frontend_2025_Scouting/docs/FRONTEND_SETUP_GUIDE.md` (covers Windows, macOS, and repository cloning)
 - Node.js and npm installed (covered in setup guide)
 
 ### Step 1: Install Dependencies
@@ -264,10 +264,10 @@ You'll see a **red database icon** ⭕ in the upper right corner of the home scr
 - Ask questions about scouting priorities and how we use data!
 
 ### For Students Interested in Development:
-- Review the setup guide: `FRONTEND_SETUP_GUIDE.md` (covers both Windows and macOS)
-- Check out `PHYSICAL_DEVICE_GUIDE.md` for more testing options
+- Review the setup guide: `Frontend_2025_Scouting/docs/FRONTEND_SETUP_GUIDE.md` (covers both Windows and macOS)
+- Check out `Frontend_2025_Scouting/docs/PHYSICAL_DEVICE_GUIDE.md` for more testing options
 - Clone the repository and explore the code
-- Read `APP_QUICKSTART.md` in the main Docs folder
+- Read `Docs/APP_QUICKSTART.md` in the main Docs folder
 - Ask team leads about contributing to development
 
 ---
@@ -275,9 +275,9 @@ You'll see a **red database icon** ⭕ in the upper right corner of the home scr
 ## Questions?
 
 ### For Team Leads:
-- Having trouble starting the server? Check the setup guides
-- Need help with Expo account? See `PHYSICAL_DEVICE_GUIDE.md`
-- Want to understand the code? Check the main `APP_QUICKSTART.md`
+- Having trouble starting the server? Check `Frontend_2025_Scouting/docs/FRONTEND_SETUP_GUIDE.md`
+- Need help with Expo account? See `Frontend_2025_Scouting/docs/PHYSICAL_DEVICE_GUIDE.md`
+- Want to understand the code? Check `Docs/APP_QUICKSTART.md`
 
 ### For Students:
 - Can't scan the QR code? Ask the team lead to help

@@ -97,6 +97,8 @@ If not installed, you'll be prompted to install Xcode Command Line Tools. Click 
 
 > 📱 **This step is frontend-specific** - complete it even if you did the Backend Setup Guide.
 
+***On your iPhone or Android device:***
+
 **For iOS (iPhone/iPad):**
 1. Open the App Store on your device
 2. Search for "Expo Go"
@@ -109,7 +111,9 @@ If not installed, you'll be prompted to install Xcode Command Line Tools. Click 
 3. Install the app
 4. You'll use this to test the app on your phone
 
-### 1.4 Install Mobile Emulator/Simulator (Optional but Recommended)
+
+<summary><h3>Install Mobile Emulator/Simulator (Optional but Recommended)</h3></summary>
+<details>
 
 > 📱 **This step is frontend-specific** - complete it even if you did the Backend Setup Guide.
 
@@ -135,7 +139,7 @@ If not installed, you'll be prompted to install Xcode Command Line Tools. Click 
    - Select a device (e.g., Pixel 5)
    - Select a system image (e.g., latest Android version)
    - Finish setup
-
+</details>
 ---
 
 ## Step 2: Set Up Visual Studio Code
@@ -253,7 +257,7 @@ cd ~/Projects/589
 
 ```bash
 # Clone the repository (this is a public github project and should be accessible)
-git clone https://github.com/Jazz411/589_Scouting_App_2026.git
+git clone https://github.com/CVHSFRC589/589_Scouting_App_2026.git
 
 # Navigate into the frontend project folder
 cd 589_Scouting_App_2026/Frontend_2025_Scouting

@@ -196,19 +196,19 @@ cd ~/Projects/589
 
 ```bash
 # Clone the repository (this is a public github project and should be accessible)
-git clone https://github.com/Jazz411/589_Scouting_Backend.git
+git clone https://github.com/CVHSFRC589/589_Scouting_App_2026.git
 
-# Navigate into the project folder
-cd 589_Scouting_Backend
+# Navigate into the backend project folder
+cd 589_Scouting_App_2026/Backend_2025_Scouting
 ```
 
 ### 3.3 Open the Project in VS Code
 
 **From Command Line/Terminal:**
 ```bash
-# Make sure you're in the 589_Scouting_Backend project directory
-# Windows: cd C:\Users\YourUsername\Projects\589\589_Scouting_Backend
-# Mac: cd ~/Projects/589/589_Scouting_Backend
+# Make sure you're in the Backend_2025_Scouting project directory
+# Windows: cd C:\Users\YourUsername\Projects\589\589_Scouting_App_2026\Backend_2025_Scouting
+# Mac: cd ~/Projects/589/589_Scouting_App_2026/Backend_2025_Scouting
 code .
 ```
 
