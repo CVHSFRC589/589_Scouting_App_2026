@@ -454,7 +454,10 @@ const Tele = () => {
                 </Pressable>
                   </View>
 
-            <Pressable style={styles.buttonSubmit} onPress={async () => {
+            <Pressable
+                style={styles.buttonSubmit}
+                disabled={!selectedClimb}
+                onPress={async () => {
                 if (!selectedClimb) return;
                 //add info to a teammatch object, then pass it forward onto the next view. Contexts?
                 //see: passing using params: https://www.google.com/search?q=passing+state+object+onto+next+view+react+native+expo-router&sca_esv=edaa9008c38817d7&rlz=1C5CHFA_enUS1077US1082&sxsrf=AHTn8zrrP1ZSaAnIEMDJqqNpv2Tknb3E_g%3A1737951678525&ei=vgmXZ4DoH6fnkPIP34uaoAE&ved=0ahUKEwiAv73DhpWLAxWnM0QIHd-FBhQQ4dUDCBA&uact=5&oq=passing+state+object+onto+next+view+react+native+expo-router&gs_lp=Egxnd3Mtd2l6LXNlcnAiPHBhc3Npbmcgc3RhdGUgb2JqZWN0IG9udG8gbmV4dCB2aWV3IHJlYWN0IG5hdGl2ZSBleHBvLXJvdXRlcjIFECEYoAEyBRAhGKABSP0SUPMDWIsScAF4AZABAJgBhgGgAcsHqgEDOS4yuAEDyAEA-AEBmAIMoALrB8ICChAAGLADGNYEGEfCAgUQIRirApgDAIgGAZAGCJIHBDEwLjKgB6g6&sclient=gws-wiz-serp
@@ -462,7 +465,7 @@ const Tele = () => {
                   team_num: Number(team),
                   match_num: Number(match),
                   regional: regional,
-                  
+
                   algae: algae,
                   coral: coral,
 
@@ -482,7 +485,6 @@ const Tele = () => {
               })
                 //</View>`./Post?team=${team}&regional=${regional}&match=${match}`)
             }}>
-              disabled={!selectedClimb}
                 <Text style={styles.algaeCountButtonText}>Next</Text>
             </Pressable>
             {/* <Pressable style={styles.buttonSubmit} onPress={() => router.push("./Post")}> 

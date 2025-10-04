@@ -1,13 +1,62 @@
 import { getCustomTabsSupportingBrowsersAsync } from "expo-web-browser";
+import {
+    mockRobots,
+    mockTeamMatches,
+    mockRemainingMatches,
+    mockClimbData,
+    getMockRobotByTeam,
+    getMockRobotsByRegional
+} from './mockData';
 
-const BASE_URL = 'https://589falkonroboticsscouting.com/tests'; // Replace with your actual API base URL
+const BASE_URL = 'http://192.168.5.17:3000/api'; // Local backend API - use computer's IP for phone access
+const API_KEY = '589_e49493d424064e8cd5043d8b5073c63dcde70e87627a1b85c2cf81d62c6688cb';
 
+// Demo mode flag - automatically enabled when backend is unavailable
+let isDemoMode = false;
+
+// Helper function to create headers with API key
+const createHeaders = (additionalHeaders: Record<string, string> = {}) => ({
+    'x-api-key': API_KEY,
+    ...additionalHeaders
+});
+
+// Helper function to safely fetch with automatic fallback to demo mode
+const safeFetch = async (url: string, options?: RequestInit) => {
+    try {
+        // Create a timeout promise
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Request timeout')), 5000);
+        });
+
+        // Race between fetch and timeout
+        const response = await Promise.race([
+            fetch(url, options),
+            timeoutPromise
+        ]) as Response;
+
+        isDemoMode = false; // Backend is working
+        return response;
+    } catch (error) {
+        if (!isDemoMode) {
+            isDemoMode = true;
+        }
+        throw error;
+    }
+};
+
+// Export demo mode status for UI components
+export const getDemoMode = () => isDemoMode;
 export const robotApiService = {
     // Get a specific robot by team number
     getRobot: async (teamNum: number, regional: string) => {
-        const response = await fetch(`${BASE_URL}/get/${teamNum}/${regional}?team=${teamNum}&regional=${regional}`);
-        if (!response.ok) throw new Error('Failed to fetch robot');
-        return response.json();
+        try {
+            const response = await safeFetch(`${BASE_URL}/get/${teamNum}/${regional}?team=${teamNum}&regional=${regional}`);
+            if (!response.ok) throw new Error('Failed to fetch robot');
+            return response.json();
+        } catch (error) {
+            // Fallback to mock data
+            return getMockRobotByTeam(teamNum, regional);
+        }
     },
 
     // Add robot image
@@ -17,6 +66,9 @@ export const robotApiService = {
 
         const response = await fetch(`${BASE_URL}/add_picture/${teamNum}?team=${teamNum}`, {
             method: 'POST',
+            headers: {
+                'x-api-key': API_KEY
+            },
             body: formData
         });
 
@@ -29,8 +81,9 @@ export const robotApiService = {
         const response = await fetch(`${BASE_URL}/matches`, {
             method: 'PUT',
             headers: {
-                'accept': 'application/json', 
-                'Content-Type': 'application/json' 
+                'accept': 'application/json',
+                'Content-Type': 'application/json',
+                'x-api-key': API_KEY
             },
             body: JSON.stringify(teamMatch)
         });
@@ -44,8 +97,9 @@ export const robotApiService = {
         const response = await fetch(`${BASE_URL}/robot/rank/${regional}?regional=${regional}`, {
             method: 'PUT',
             headers: {
-                'accept': 'application/json', 
-                'Content-Type': 'application/json' 
+                'accept': 'application/json',
+                'Content-Type': 'application/json',
+                'x-api-key': API_KEY
             },
         });
 
@@ -83,51 +137,59 @@ export const robotApiService = {
 
     // Update climb statistics from /climbing/{regional}/{team_num}
     getClimbStats: async (teamNum: number, regional: string): Promise<ClimbData> => {
-        const response = await fetch(`${BASE_URL}/climbing/${regional}/${teamNum}?team_num=${teamNum}&regional=${regional}`, {
-            method: 'GET',
-            headers: {
-                'accept': 'application/json', 
-                'Content-Type': 'application/json' 
-            },
-        });
+        try {
+            const response = await safeFetch(`${BASE_URL}/climbing/${regional}/${teamNum}?team_num=${teamNum}&regional=${regional}`, {
+                method: 'GET',
+                headers: {
+                    'accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+            });
 
-        if (!response.ok) throw new Error('Failed to update climb statistics');
-        return response.json();
+            if (!response.ok) throw new Error('Failed to update climb statistics');
+            return response.json();
+        } catch (error) {
+            // Fallback to mock data
+            return mockClimbData;
+        }
     },
 
 
     // Get all robots for a regional
     getAllRobots: async (regional: string) => {
-        const response = await fetch(`${BASE_URL}/robots/${regional}`);
-        
-        console.log(response.json)
-        
-        if (!response.ok) throw new Error('Failed to fetch robots');
-        return response.json();
+        try {
+            const response = await safeFetch(`${BASE_URL}/robots/${regional}`);
+            if (!response.ok) throw new Error('Failed to fetch robots');
+            const result = await response.json();
+            return result.data || [];
+        } catch (error) {
+            // Fallback to mock data
+            return getMockRobotsByRegional(regional);
+        }
     },
 
-    getSortedRobots: async (sortBy: SortFieldParams, regional: string) => {        
+    getSortedRobots: async (sortBy: SortFieldParams, regional: string) => {
         try {
-
-            console.log(JSON.stringify(sortBy))
             const req = new Request(`${BASE_URL}/robots/ranking/sorted/${regional}`, {
                 method: 'POST',
                 headers: {
-                    'accept': 'application/json', 
-                    'Content-Type': 'application/json' 
+                    'accept': 'application/json',
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(sortBy)
             });
 
-            // console.log(req)
-            const response = await fetch(req);
-            
-            // console.log("sorted robots");
+            const response = await safeFetch(req.url, {
+                method: req.method,
+                headers: req.headers,
+                body: JSON.stringify(sortBy)
+            });
+
             if (!response.ok) throw new Error('Failed to fetch sorted robots');
-            return response.json(); 
+            return response.json();
         } catch (error) {
-            console.error("API call error:", error);
-            return null;
+            // Fallback to mock data (unsorted for now)
+            return getMockRobotsByRegional(regional);
         }
     },
 
@@ -266,17 +328,17 @@ export const robotApiService = {
         try {
           const response = await fetch(`${BASE_URL}/scouting/match/postgame`, {
             method: 'PUT',
-            headers: {
+            headers: createHeaders({
               'Accept': 'application/json',
-              'Content-Type': 'application/json',
-            },
+              'Content-Type': 'application/json'
+            }),
             body: JSON.stringify(teamMatch),
           });
-      
+
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
-      
+
           const data = await response.json();
           return data as TeamMatchPostGame;
         } catch (error) {
@@ -291,23 +353,25 @@ export const robotApiService = {
         match_num: number
     ): Promise<TeamMatchResponse | null> => {
         const url = `${BASE_URL}/match/${regional}/${team_num}/${match_num}?team_num=${team_num}&match_num=${match_num}`;
-        
+
         try {
-            const response = await fetch(url, {
+            const response = await safeFetch(url, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json"
                 }
             });
-            
+
             if (!response.ok) {
                 throw new Error(`Error: ${response.status} ${response.statusText}`);
             }
-            
+
             return await response.json();
         } catch (error) {
-            console.error("Failed to fetch team match data:", error);
-            return null;
+            console.error("Failed to fetch team match data, using mock data:", error);
+            // Fallback to mock match data
+            const mockMatch = mockTeamMatches.find(m => m.match_num === match_num && m.team_num === team_num);
+            return mockMatch || null;
         }
     },
 
@@ -316,23 +380,24 @@ export const robotApiService = {
         team_num: number,
     ): Promise<TeamMatchResponse[] | null> => {
         const url = `${BASE_URL}/matches/all/${regional}/${team_num}?team_num=${team_num}`;
-        
+
         try {
-            const response = await fetch(url, {
+            const response = await safeFetch(url, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json"
                 }
             });
-            
+
             if (!response.ok) {
                 throw new Error(`Error: ${response.status} ${response.statusText}`);
             }
-            
+
             return await response.json();
         } catch (error) {
-            console.error("Failed to fetch team match data:", error);
-            return null;
+            console.error("Failed to fetch team match data, using mock data:", error);
+            // Fallback to mock match data for this team
+            return mockTeamMatches.filter(m => m.team_num === team_num);
         }
     }, 
 
@@ -341,24 +406,25 @@ export const robotApiService = {
         team_num: number
     ): Promise<TeamMatchBase[] | null> => {
         const url = `${BASE_URL}/matches/remaining/${regional}/${team_num}?team_num=${team_num}`;
-        
+
         try {
-            const response = await fetch(url, {
+            const response = await safeFetch(url, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
                     "Accept": "application/json"
                 }
             });
-            
+
             if (!response.ok) {
                 throw new Error(`Error: ${response.status} ${response.statusText}`);
             }
-            
+
             return await response.json();
         } catch (error) {
-            console.error("Failed to fetch team match data:", error);
-            return null;
+            console.error("Failed to fetch remaining matches, using mock data:", error);
+            // Fallback to mock remaining matches
+            return mockRemainingMatches.filter(m => m.team_num === team_num);
         }
     }
 

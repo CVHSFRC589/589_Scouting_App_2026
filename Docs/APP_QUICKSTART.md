@@ -2,6 +2,13 @@
 
 Quick steps to get the app running in VSCode.
 
+> ⚠️ **Prerequisites:** This guide assumes you have completed the setup process. If you haven't set up your development environment yet, please complete the appropriate setup guide(s) first:
+>
+> - **Backend Setup:** [`Backend_2025_Scouting/docs/BACKEND_SETUP_GUIDE.md`](../Backend_2025_Scouting/docs/BACKEND_SETUP_GUIDE.md)
+> - **Frontend Setup:** [`Frontend_2025_Scouting/docs/FRONTEND_SETUP_GUIDE.md`](../Frontend_2025_Scouting/docs/FRONTEND_SETUP_GUIDE.md)
+>
+> Both guides are designed to work together - you can complete them in any order, and they note which steps can be skipped if you've already done the other.
+
 ## 1. Update from Remote Repository
 
 Open VSCode terminal (`` Ctrl+` ``) and pull latest changes:

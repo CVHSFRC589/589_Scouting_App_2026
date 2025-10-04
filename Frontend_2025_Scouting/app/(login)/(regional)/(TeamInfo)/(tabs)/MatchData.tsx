@@ -220,7 +220,7 @@ useEffect(() => {
         },
       ]);
     } catch (err) {
-      console.error('Error loading data:', err);
+      // Error loading data
       setError(err instanceof Error ? err.message : 'Failed to fetch data');
     } finally {
       setLoading(false);
@@ -588,7 +588,7 @@ return(
               <Text>Loading climb data...</Text>
             )}
             </View>
-{/* 
+            {/*
             <View style={[styles.quickTagBox, { backgroundColor: matchData?.climb_deep ? '#0071BC' : '#d3d3d3' }]}>
               <Text style={styles.quickTagText}>Deep</Text>
             </View>
@@ -601,8 +601,10 @@ return(
               <Text style={styles.quickTagText}>Park</Text>
             </View>
             <View style={[styles.quickTagBox, { backgroundColor: !(matchData?.climb_deep || matchData?.climb_shallow || matchData?.park) ? '#0071BC' : '#d3d3d3' }]}>
-              <Text style={styles.quickTagText}>None</Text> */ }
+              <Text style={styles.quickTagText}>None</Text>
             </View>
+            </View>
+            */}
 
 {/* commenting out temporarily to work on errors */}
             {/* </View>
@@ -684,8 +686,8 @@ return(
                 </View>
             </View>
             </View> */}
-            {/* </View> */}
-            </View>
+        </View>
+        </View>
     </ScrollView>
   );
 };

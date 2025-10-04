@@ -5,6 +5,8 @@ import { useRouter } from "expo-router";
 import { useFonts } from "expo-font";
 import {PieChart} from "react-native-chart-kit";
 import AppCache from "@/data/cache";
+import { getDemoMode, robotApiService } from "@/data/processing";
+import { Ionicons } from '@expo/vector-icons';
 
 const API_URL = "ec2-18-220-35-32.us-east-2.compute.amazonaws.com";
 //const API_URL = "localhost:8000"
@@ -50,68 +52,42 @@ const Home = () => {
   //   },
   // ]
   useEffect(() => {
-    console.log("BASIC TEST: Component mounted - this should appear in console");
+    // Component mounted
   }, []);
 
   useEffect(() => {
-    console.log("DATA FETCH: Starting data fetch useEffect");
-    
     const getLeaderboardData = async () => {
       try {
-
         const cache = await AppCache.getData();
         const regional = cache!.regional;
 
-        console.log("Attempting to fetch data...");
-        const API_URL = "https://589falkonroboticsscouting.com/tests"; // Replace with your actual API URL
-        
-        const response = await fetch(`${API_URL}/robots/ranking/sorted/${regional}`, {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            "RANK": true,
-            "ALGAE_SCORED": false,
-            "ALGAE_REMOVED": false,
-            "ALGAE_PROCESSED": false,
-            "ALGAE_AVG": false,
-            "CORAL_L1": false,
-            "CORAL_L2": false,
-            "CORAL_L3": false,
-            "CORAL_L4": false,
-            "CORAL_AVG": false
-          }),
-        });
-        
-        // console.log("Response received:", response.status);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error ${response.status}`);
-        }
-        
-        const data = await response.json();
-        // console.log("Data parsed successfully:", data);
-        
+        // Use robotApiService which has built-in fallback to mock data
+        const data = await robotApiService.getSortedRobots({
+          "RANK": true,
+          "ALGAE_SCORED": false,
+          "ALGAE_REMOVED": false,
+          "ALGAE_PROCESSED": false,
+          "ALGAE_AVG": false,
+          "CORAL_L1": false,
+          "CORAL_L2": false,
+          "CORAL_L3": false,
+          "CORAL_L4": false,
+          "CORAL_AVG": false
+        }, regional);
+
         if (data && data.length >= 3) {
           setFirstPlaceTeam(data[0].team_num.toString());
           setSecondPlaceTeam(data[1].team_num.toString());
           setThirdPlaceTeam(data[2].team_num.toString());
-          console.log("Team data set successfully");
         }
       } catch (error) {
-        console.error("Error fetching data:", error);
+        // Error already handled by robotApiService fallback
       } finally {
         setIsLoading(false);
       }
     };
-    
+
     getLeaderboardData();
-    
-    return () => {
-      console.log("Cleanup function called");
-    };
   }, []);
   // The Doughnut Chart component that takes in an array of percentages
   // const Ring = ({ data }) => {
@@ -157,13 +133,20 @@ const Home = () => {
     <ScrollView>
       <View style={styles.container}>
         <View style={styles.titleContainer}>
-          <Text style={styles.title}>HOME</Text>
-          <Image
-            source={require("../../assets/images/Dog House.png")}
-            style={styles.buttonImage2}
-          />
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+            <Text style={styles.title}>HOME</Text>
+            <Image
+              source={require("../../assets/images/Dog House.png")}
+              style={styles.buttonImage2}
+            />
+          </View>
+          {getDemoMode() && (
+            <View style={styles.connectionIndicator}>
+              <Ionicons name="server-outline" size={16} color="#FFFFFF" />
+            </View>
+          )}
         </View>
-  
+
         <View style={styles.line}></View>
   
         <Text style={styles.subtitle}>Scouting</Text>
@@ -208,7 +191,7 @@ const Home = () => {
               {/* Second Bar with Circle */}
               <View style={styles.barWrapper}>
                 <View style={styles.bar2nd}></View>
-                <Text style={styles.barText2nd} id="secondLeaderboardText">{secondPlaceTeam}</Text>
+                <Text style={styles.barText2nd} id="secondLeaderboardText">{secondPlaceTeam || ''}</Text>
                 {/* <View style={styles.iconCircle}>
                   {/* <Image
                     source={{ uri: `data:image/png;base64,${secondTeamImage}` }}
@@ -237,7 +220,7 @@ const Home = () => {
               {/* First Bar with Circle */}
               <View style={styles.barWrapper}>
                 <View style={styles.bar1st}></View>
-                <Text style={styles.barText1st} id="firstLeaderboardText">{firstPlaceTeam}</Text>
+                <Text style={styles.barText1st} id="firstLeaderboardText">{firstPlaceTeam || ''}</Text>
                 {/* <View style={styles.iconCircle}>
                   {/* <Image
                     source={{ uri: `data:image/png;base64,${firstTeamImage}` }}
@@ -277,7 +260,7 @@ const Home = () => {
                     source={{ uri: `data:image/png;base64,${thirdTeamImage}` }}
                     style={styles.iconImage}
                   /> */}
-                  <Text style={styles.barText3rd}>{thirdPlaceTeam}</Text>
+                  <Text style={styles.barText3rd}>{thirdPlaceTeam || ''}</Text>
                 {/* </View> */}
                 {/* New 3rd Icon on top of bar3rd */}
                 <View style={styles.iconOverlay}>
@@ -459,8 +442,18 @@ const styles = StyleSheet.create({
   titleContainer: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 10,
     marginTop: 10,
+    width: "100%",
+  },
+  connectionIndicator: {
+    backgroundColor: '#DC3545',
+    borderRadius: 14,
+    width: 28,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   upcomingContainer: {
     width: "100%",
@@ -481,6 +474,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 5,
     color: "#0071BC",
+    flex: 1,
   },
   text: {
     fontFamily: "InterBold",
@@ -498,7 +492,8 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 2,
     backgroundColor: "#000",
-    marginTop: -20,
+    marginTop: 5,
+    marginBottom: 10,
     borderRadius: 5,
   },
   line2: {
@@ -536,6 +531,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     width: "100%",
     marginTop: 10,
+    paddingRight: 5,
   },
   rankingImage: {
     width: 30,

@@ -2,6 +2,8 @@
 
 **Welcome to Team 589!** This guide will walk you through setting up your development environment from scratch. By the end, you'll have the scouting backend running on your laptop.
 
+> 📝 **Note:** If you've already completed the **Frontend Setup Guide**, you can skip Steps 1 and 2 (Node.js, Git, and VS Code are already installed). Jump directly to [Step 3: Clone the Repository](#step-3-clone-the-repository).
+
 ## Table of Contents
 1. [Install Required Software](#step-1-install-required-software)
 2. [Set Up Visual Studio Code](#step-2-set-up-visual-studio-code)
@@ -14,6 +16,8 @@
 ---
 
 ## Step 1: Install Required Software
+
+> ✅ **Already completed the Frontend Setup Guide?** You can skip this step - Node.js and Git are already installed.
 
 ### 1.1 Install Node.js (v20 or higher)
 
@@ -91,6 +95,8 @@ If not installed, you'll be prompted to install Xcode Command Line Tools. Click 
 
 ## Step 2: Set Up Visual Studio Code
 
+> ✅ **Already completed the Frontend Setup Guide?** You can skip Section 2.1 (VS Code installation). However, you should still install the backend-specific extensions in Section 2.2.
+
 ### 2.1 Install VS Code
 
 **For Windows:**
@@ -107,6 +113,8 @@ If not installed, you'll be prompted to install Xcode Command Line Tools. Click 
 4. Launch VS Code from Applications
 
 ### 2.2 Install Essential VS Code Extensions
+
+> 📝 **Note:** If you completed the Frontend Setup Guide, you may already have Claude Code, ESLint, Prettier, GitLens, and npm Intellisense installed. You can skip those and just install the Thunder Client extension which is particularly useful for backend API testing.
 
 Once VS Code is open:
 
@@ -157,6 +165,8 @@ Once VS Code is open:
 
 ## Step 3: Clone the Repository
 
+> 📝 **Note:** If you already cloned the repository while following the Frontend Setup Guide, you can skip Section 3.2. Just navigate to the Backend folder: `cd 589_Scouting_App_2026/Backend_2025_Scouting`
+
 ### 3.1 Choose a Location for Your Code
 
 **For Windows:**
@@ -176,6 +186,11 @@ cd ~/Projects/589
 ```
 
 ### 3.2 Clone the Repository from GitHub
+
+> ✅ **Already cloned the repository for the Frontend?** Skip this section and navigate to the backend folder instead:
+> ```bash
+> cd 589_Scouting_App_2026/Backend_2025_Scouting
+> ```
 
 **Team 589 Scouting Backend Repository:**
 

@@ -1,7 +1,7 @@
 import { Link, router, useLocalSearchParams, useRouter } from "expo-router";
 import BackButton from '../../../../backButton';
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, StyleSheet, Animated, PanResponder, Pressable, TouchableOpacity, TextInput, FlatList, Dimensions, ScrollView } from "react-native";
+import { View, Text, StyleSheet, Animated, PanResponder, Pressable, TouchableOpacity, TextInput, FlatList, Dimensions, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { useFonts } from 'expo-font';
 import ProgressBar from '../../../../../components/ProgressBar'
 import { robotApiService } from "@/data/processing";
@@ -187,36 +187,71 @@ const Pregame = () => {
     const trackWidth = screenWidth * 0.8;
     const tickCount = 5;
     const tickSpacing = screenWidth / (tickCount); // Use full screen width for tick spacing
-    
-    const panResponder = PanResponder.create({
-        onMoveShouldSetPanResponder: () => true,
-        onPanResponderMove: (e, gestureState) => {
-            let newX = gestureState.dx + pan._value;
-            if (newX < 0) newX = 0;
-            if (newX > trackWidth - 20) newX = trackWidth - 20; // Clamp thumb to track width minus thumb width
-        
-            const nearestTick = Math.round(newX / tickSpacing) * tickSpacing;
-            Animated.timing(pan, {
-                toValue: nearestTick,
-                duration: 45,
-                useNativeDriver: false,
-            }).start();
-        
-            valueRef.current = Math.round((nearestTick / trackWidth) * (max - min) + min);
-            setAutoStartingPosition(Math.round(valueRef.current));
-        },
-        onPanResponderRelease: () => {
-            const nearestTick = Math.round(pan._value / tickSpacing) * tickSpacing;
-            Animated.spring(pan, {
-                toValue: nearestTick,
-                useNativeDriver: false,
-            }).start();
-            valueRef.current = Math.round((nearestTick / screenWidth) * (max - min) + min);
-        
-            setAutoStartingPosition(Math.round(valueRef.current));
-            // auto_starting_positionConst = Math.round(valueRef.current);
-        },
-    });
+
+    const trackPanResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: () => true,
+            onPanResponderGrant: (evt) => {
+                // Handle tap on track
+                const locationX = evt.nativeEvent.locationX;
+                const nearestTick = Math.round(locationX / tickSpacing) * tickSpacing;
+
+                Animated.spring(pan, {
+                    toValue: nearestTick,
+                    useNativeDriver: false,
+                    friction: 5,
+                    tension: 60,
+                }).start();
+
+                valueRef.current = Math.round((nearestTick / trackWidth) * (max - min) + min);
+                setAutoStartingPosition(Math.round(valueRef.current));
+            },
+        })
+    ).current;
+
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: (evt, gestureState) => {
+                // Allow movement with less resistance
+                return Math.abs(gestureState.dx) > 2 || Math.abs(gestureState.dy) > 2;
+            },
+            onPanResponderGrant: () => {
+                // Store the starting position when touch begins
+                pan.setOffset(pan._value);
+                pan.setValue(0);
+            },
+            onPanResponderMove: (e, gestureState) => {
+                let newX = gestureState.dx;
+                const totalX = pan._offset + newX;
+
+                // Clamp the value
+                if (totalX < 0) newX = -pan._offset;
+                if (totalX > trackWidth - 20) newX = trackWidth - 20 - pan._offset;
+
+                pan.setValue(newX);
+
+                const currentPosition = pan._offset + newX;
+                const nearestTick = Math.round(currentPosition / tickSpacing) * tickSpacing;
+                valueRef.current = Math.round((nearestTick / trackWidth) * (max - min) + min);
+                setAutoStartingPosition(Math.round(valueRef.current));
+            },
+            onPanResponderRelease: () => {
+                pan.flattenOffset();
+                const nearestTick = Math.round(pan._value / tickSpacing) * tickSpacing;
+                Animated.spring(pan, {
+                    toValue: nearestTick,
+                    useNativeDriver: false,
+                    friction: 5,
+                    tension: 60,
+                }).start();
+
+                valueRef.current = Math.round((nearestTick / trackWidth) * (max - min) + min);
+                setAutoStartingPosition(Math.round(valueRef.current));
+            },
+        })
+    ).current;
     
     // Ensure ticks are placed correctly inside the track
     const renderTicks = () => {
@@ -246,7 +281,6 @@ const Pregame = () => {
             setRobots(robotData);
         } catch (err) {
             setError('Failed to fetch robot data');
-            console.error(err);
         } finally {
             setLoading(false);
         }
@@ -260,7 +294,6 @@ const Pregame = () => {
             setMatches(matches);
         } catch (err) {
             setError('Failed to fetch robot data');
-            console.error(err);
         } finally {
             setLoading(false);
         }
@@ -297,7 +330,12 @@ const Pregame = () => {
     // }, []);
 
     return (
-        <ScrollView>
+        <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1 }}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        >
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <View style={styles.container}>
             <BackButton buttonName="Home Page" />
             <ProgressBar currentStep="Pre" />
@@ -393,6 +431,7 @@ const Pregame = () => {
                         placeholder="Match Number"
                         value={selectedMatch?.toString()}
                         onChangeText={(text: string) => handleMatchSelect(Number(text))}
+                        keyboardType="number-pad"
             />
 
             
@@ -439,12 +478,12 @@ const Pregame = () => {
 
             <Text style={styles.Smallsubtitle}>Starting Position</Text>
             <View style={styles.sliderContainer}>
-                <View style={[styles.track, { width: trackWidth }]}>
+                <View style={[styles.track, { width: trackWidth }]} {...trackPanResponder.panHandlers}>
                     {/* Render tick marks */}
                     {renderTicks()}
                     <Animated.View
                         {...panResponder.panHandlers}
-                        style={[ 
+                        style={[
                             styles.thumb,
                             {
                                 transform: [{ translateX: pan }],
@@ -464,6 +503,7 @@ const Pregame = () => {
             </Pressable>
         </View>
         </ScrollView>
+        </KeyboardAvoidingView>
     );
 };
 
@@ -478,10 +518,8 @@ async function nextButton(regional: string | null, team_num: number | null, matc
     else if (regional == "East Bay") {
         formatted_regional = "be"
     }
-    console.log("Selected Team: " + team_num);
-    console.log("Selected Match: " + match_num);
-    console.log("Selected Regional: " + formatted_regional);
-    
+    // Selected values logged for debugging
+
     if (team_num == null || match_num == null || regional == null) {
         alert("Please fill out all fields")
     }
@@ -493,7 +531,7 @@ async function nextButton(regional: string | null, team_num: number | null, matc
             auto_starting_position: auto_starting_position!
         }
 
-        console.log("Sending data to server: ", teamMatch);
+        // Sending data to server
 
         // if (!secondTimeThru) {
         try {
@@ -506,7 +544,7 @@ async function nextButton(regional: string | null, team_num: number | null, matc
                 }
             }
             else {
-                console.error(err)
+                // Error sending pregame data
             }
         }
         // }

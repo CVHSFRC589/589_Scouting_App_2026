@@ -138,7 +138,7 @@ useEffect(() => {
       let regional = params?.regional
       
       const data = await robotApiService.fetchTeamMatchData(regional!, Number(team), Number(match));
-      console.log(data)
+      // Data fetched successfully
       if (data) {
         setMatchData(data);
       

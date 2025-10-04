@@ -142,3 +142,5 @@ vite.config.ts.timestamp-*
 
 # Claude Code
 .claude/
+Frontend_2025_Scouting\.claude
+Backend_2025_Scouting\.claude

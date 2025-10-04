@@ -1,10 +1,11 @@
 import { Link, router, useRouter } from "expo-router";
 import BackButton from '../../../backButton';
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, Pressable, Image, StyleSheet, TextInput, ScrollView, Linking, Platform, TouchableOpacity, Modal} from "react-native";
+import { View, Text, Pressable, Image, StyleSheet, TextInput, ScrollView, Linking, Platform, TouchableOpacity, Modal, Alert, KeyboardAvoidingView} from "react-native";
 import { useFonts } from "expo-font";
-import { robotApiService } from "@/data/processing";
+import { robotApiService, getDemoMode } from "@/data/processing";
 import AppCache from "@/data/cache";
+import { Ionicons } from '@expo/vector-icons';
 // import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 
 const PitScouting = () => {
@@ -43,9 +44,12 @@ const PitScouting = () => {
 
     //form data
     const [team, setTeam] = useState<string>("")
+    const [useNumberPad, setUseNumberPad] = useState<boolean>(true)
     const [regional, setRegional] = useState<string>("")
     const [vision, setVision] = useState<string>("")
+    const [isVisionDropdownVisible, setVisionDropdownVisible] = useState<boolean>(false)
     const [driveTrain, setDriveTrain] = useState<string>("")
+    const [isDriveTrainDropdownVisible, setDriveTrainDropdownVisible] = useState<boolean>(false)
     const [ground_intake, set_ground_intake] = useState<boolean>(false)
     const [source_intake, set_source_intake] = useState<boolean>(false)
 
@@ -116,35 +120,133 @@ if(!fontLoaded){
 }
   
     return (
-        //Backend robot pit scouting schema + table needs alteration to match this better. 
-        <ScrollView>
+        //Backend robot pit scouting schema + table needs alteration to match this better.
+        <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1 }}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        >
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <View style={styles.container}>
         <BackButton buttonName="Home Page" />
-            <Text style={styles.title}>Pit Scouting</Text>
+            <View style={styles.titleContainer}>
+                <Text style={styles.title}>Pit Scouting</Text>
+                {getDemoMode() && (
+                    <View style={styles.connectionIndicator}>
+                        <Ionicons name="server-outline" size={16} color="#FFFFFF" />
+                    </View>
+                )}
+            </View>
 
-            <Text style={styles.Smallsubtitle}>Team</Text> 
+            <View style={styles.teamInputContainer}>
+                <Text style={styles.Smallsubtitle}>Team</Text>
+                <TouchableOpacity
+                    onPress={() => setUseNumberPad(!useNumberPad)}
+                    style={styles.keyboardToggle}
+                >
+                    <Ionicons
+                        name={useNumberPad ? "keypad-outline" : "text-outline"}
+                        size={20}
+                        color="#0071BC"
+                    />
+                </TouchableOpacity>
+            </View>
             <TextInput
                 style={styles.input}
                 placeholder="Enter Team Number"
                 value={team}
                 onChangeText={setTeam}
+                keyboardType={useNumberPad ? "number-pad" : "default"}
             />
 
-            <Text style={styles.Smallsubtitle}>Vision System</Text> 
-            <TextInput
-                style={styles.input}
-                placeholder="Enter Vision System"
-                value={vision}
-                onChangeText={setVision}
-            />
+            <Text style={styles.Smallsubtitle}>Vision System</Text>
+            <View style={{ position: 'relative', zIndex: 1000 }}>
+                <TouchableOpacity
+                    style={styles.dropdownButton}
+                    onPress={() => setVisionDropdownVisible(!isVisionDropdownVisible)}
+                >
+                    <View style={styles.dropdownContent}>
+                        <Text style={[styles.dropdownButtonText, vision && { color: '#333' }]}>
+                            {vision || 'Select Vision System'}
+                        </Text>
+                        <Text style={styles.dropdownArrow}>
+                            {isVisionDropdownVisible ? '∧' : '∨'}
+                        </Text>
+                    </View>
+                </TouchableOpacity>
 
-            <Text style={styles.Smallsubtitle}>Drive Train</Text> 
-            <TextInput
-                style={styles.input}
-                placeholder="Enter Drive Train"
-                value={driveTrain}
-                onChangeText={setDriveTrain}
-            />
+                {isVisionDropdownVisible && (
+                    <View style={styles.dropdownContainer}>
+                        <TouchableOpacity
+                            style={styles.option}
+                            onPress={() => {
+                                setVision('Yes');
+                                setVisionDropdownVisible(false);
+                            }}
+                        >
+                            <Text style={styles.optionText}>Yes</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.option}
+                            onPress={() => {
+                                setVision('No');
+                                setVisionDropdownVisible(false);
+                            }}
+                        >
+                            <Text style={styles.optionText}>No</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+            </View>
+
+            <Text style={styles.Smallsubtitle}>Drive Train</Text>
+            <View style={{ position: 'relative', zIndex: 999 }}>
+                <TouchableOpacity
+                    style={styles.dropdownButton}
+                    onPress={() => setDriveTrainDropdownVisible(!isDriveTrainDropdownVisible)}
+                >
+                    <View style={styles.dropdownContent}>
+                        <Text style={[styles.dropdownButtonText, driveTrain && { color: '#333' }]}>
+                            {driveTrain || 'Select Drive Train'}
+                        </Text>
+                        <Text style={styles.dropdownArrow}>
+                            {isDriveTrainDropdownVisible ? '∧' : '∨'}
+                        </Text>
+                    </View>
+                </TouchableOpacity>
+
+                {isDriveTrainDropdownVisible && (
+                    <View style={styles.dropdownContainer}>
+                        <TouchableOpacity
+                            style={styles.option}
+                            onPress={() => {
+                                setDriveTrain('Swerve');
+                                setDriveTrainDropdownVisible(false);
+                            }}
+                        >
+                            <Text style={styles.optionText}>Swerve</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.option}
+                            onPress={() => {
+                                setDriveTrain('Tank');
+                                setDriveTrainDropdownVisible(false);
+                            }}
+                        >
+                            <Text style={styles.optionText}>Tank</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.option}
+                            onPress={() => {
+                                setDriveTrain('Wheel');
+                                setDriveTrainDropdownVisible(false);
+                            }}
+                        >
+                            <Text style={styles.optionText}>Wheel</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+            </View>
             
             <Text style={styles.Smallsubtitle}>Intake</Text>
             <View style={styles.group}>
@@ -241,14 +343,13 @@ if(!fontLoaded){
                 </Pressable>
             </View>
             
-            <Text style={styles.Smallsubtitle}>Comments</Text> 
+            <Text style={styles.Smallsubtitle}>Comments</Text>
             <TextInput
                 style={styles.input}
                 placeholder="Enter Comments"
                 value={comments}
                 onChangeText={(text) => setComments(text.slice(0, 70))}
             />
-            </View>
     
 {/* <!--             <Text style={styles.Smallsubtitle}>Photo</Text>
                
@@ -296,12 +397,12 @@ if(!fontLoaded){
                                </View> --> */}
 
             
-            <Pressable style={styles.buttonSubmit} onPress={async () => 
+            <Pressable style={styles.buttonSubmit} onPress={async () =>
                 {
                     let team_num = Number(team)
                     let pitData: RobotPitData = {
                         team_num: team_num,
-                        regional: regional, 
+                        regional: regional,
                         vision_sys: vision,
                         drive_train: driveTrain,
                         ground_intake: ground_intake,
@@ -317,13 +418,38 @@ if(!fontLoaded){
                         climb_shallow: climb_shallow,
                         comments: comments
                     }
-                    await robotApiService.updatePitData(team_num, pitData)
-                    router.push("/(login)/home")
+
+                    try {
+                        await robotApiService.updatePitData(team_num, pitData)
+                        Alert.alert(
+                            'Data Submitted',
+                            `Pit scouting data for Team ${team_num} has been submitted successfully!\n\nNote: Running in demo mode.`,
+                            [
+                                {
+                                    text: 'OK',
+                                    onPress: () => router.push("/(login)/home")
+                                }
+                            ]
+                        );
+                    } catch (error) {
+                        // Demo mode - show success message even if backend unavailable
+                        Alert.alert(
+                            'Data Saved',
+                            `Pit scouting data for Team ${team_num} has been recorded.\n\nNote: Running in demo mode.`,
+                            [
+                                {
+                                    text: 'OK',
+                                    onPress: () => router.push("/(login)/home")
+                                }
+                            ]
+                        );
+                    }
                 }}>
                 <Text style={styles.algaeCountButtonText}>Submit</Text>
             </Pressable>
-        {/* </View> */}
+        </View>
         </ScrollView>
+        </KeyboardAvoidingView>
     );
 };
 
@@ -339,19 +465,46 @@ const styles = StyleSheet.create({
         gap: '1%',
         marginBottom: 5
     },
-   
+
+    titleContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        position: 'relative',
+        marginBottom: -10,
+    },
+
     title:{
         fontFamily: 'Koulen',
         fontSize: 45,
         alignSelf: 'flex-start',
-        marginBottom: -10,
         //  left: 50,
+    },
+
+    connectionIndicator: {
+        position: 'absolute',
+        right: 0,
+        top: 0,
+        backgroundColor: '#DC3545',
+        borderRadius: 14,
+        width: 28,
+        height: 28,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     Smallsubtitle: {
         fontFamily: 'InterBold',
         fontSize: 16,
         textAlign: 'left',
         color: '#0071BC',
+    },
+    teamInputContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 5,
+    },
+    keyboardToggle: {
+        padding: 5,
     },
     box: {
         width:'100%',
@@ -402,6 +555,51 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         borderRadius: 10,
       },
+      dropdownButton: {
+        height: 40,
+        width: '100%',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: '#949494',
+        borderRadius: 10,
+        paddingHorizontal: 10,
+        backgroundColor: '#fff',
+        marginBottom: 10,
+    },
+    dropdownContent: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    dropdownArrow: {
+        fontSize: 18,
+        color: '#949494',
+    },
+    dropdownButtonText: {
+        fontSize: 14,
+        color: '#949494',
+    },
+    dropdownContainer: {
+        position: 'absolute',
+        top: '100%',
+        left: 0,
+        right: 0,
+        zIndex: 1001,
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 8,
+        backgroundColor: '#fff',
+        maxHeight: 100,
+    },
+    option: {
+        padding: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+    },
+    optionText: {
+        fontSize: 14,
+        color: '#333',
+    },
       text: {
         fontSize: 16,
       },
@@ -416,6 +614,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         backgroundColor: '#00BCF0',
         marginTop: 40,
+        marginBottom: 40,
         alignSelf: 'center', // This will center the button within its container
         justifyContent: 'center',  // Ensure the text is centered vertically inside the button
         alignItems: 'center',

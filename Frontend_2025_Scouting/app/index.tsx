@@ -1,5 +1,6 @@
 import { Link, router } from "expo-router";
 import { TextInput, Pressable, Button, Image, Text, View, StyleSheet, TouchableOpacity, FlatList } from "react-native";
+import { Ionicons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
 import React, { useState, useEffect } from 'react';
 import { robotApiService } from "@/data/processing";
@@ -89,7 +90,6 @@ const Login: React.FC = () => {
             setRobots(robotData);
         } catch (err) {
             setError('Failed to fetch robot data');
-            console.error(err);
         } finally {
             setLoading(false);
         }
@@ -268,11 +268,11 @@ const Login: React.FC = () => {
                 )}
             </View>
 
-            <Pressable 
+            <Pressable
                 style={[
                     styles.buttonLogin,
                     (!selectedValue || !selectedSecondValue) && styles.buttonLoginDisabled
-                ]} 
+                ]}
                 onPress={async () => {
                     await AppCache.saveData(Number(selectedValue), regional)
                     router.push("/(login)/home")
@@ -281,6 +281,19 @@ const Login: React.FC = () => {
             >
                 <Text style={styles.buttonText}>Log in</Text>
             </Pressable>
+
+            {/* Skip Arrow */}
+            <TouchableOpacity
+                style={styles.skipButton}
+                onPress={async () => {
+                    // Save default values if skipping login
+                    await AppCache.saveData(589, 'be'); // Default to team 589 and East Bay
+                    router.push("/(login)/home");
+                }}
+            >
+                <Ionicons name="arrow-forward-circle-outline" size={40} color="rgba(0, 130, 190, 255)" />
+                <Text style={styles.skipText}>Skip</Text>
+            </TouchableOpacity>
         </View>
     );
 };
@@ -404,6 +417,17 @@ const styles = StyleSheet.create({
         padding: 15,
         fontSize: 16,
         color: '#ff0000',
+    },
+    skipButton: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 20,
+    },
+    skipText: {
+        fontSize: 14,
+        color: 'rgba(0, 130, 190, 255)',
+        fontFamily: 'BPoppins',
+        marginTop: 5,
     },
 });
 

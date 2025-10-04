@@ -3,6 +3,7 @@ import BackButton from '../../../backButton';
 import React, { useState, useEffect } from "react";
 import { View, Text, Pressable, ScrollView, StyleSheet, Modal, TouchableOpacity, Dimensions, TextInput, Image } from "react-native";
 import { robotApiService } from '../../../../data/processing';
+import { useFonts } from 'expo-font';
 
 import LeaderboardView from '../../../../components/RobotLeaderboard';
 import AppCache from "@/data/cache";
@@ -10,6 +11,9 @@ import AppCache from "@/data/cache";
 const Leaderboard = () => {
   const router = useRouter();
   const { width, height } = Dimensions.get('window');
+  const [fontLoaded] = useFonts({
+    'Koulen': require('../../../../assets/fonts/Koulen-Regular.ttf'),
+  });
   const [showLeaderboard, setShowLeaderboard] = useState<boolean>(true); // Show leaderboard by default
   const [showFields, setShowFields] = useState<boolean>(true); // Keep navigation bar visible
   const [searchParams, setSearchParams] = useState<SortFieldParams>({
@@ -123,6 +127,7 @@ const Leaderboard = () => {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <BackButton buttonName="Home Page" />
+      <Text style={styles.title}>Leaderboard</Text>
 
       {showFields && (
         <>
@@ -201,6 +206,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-start',
     padding: 25,
+  },
+  title: {
+    fontFamily: 'Koulen',
+    fontSize: 40,
+    marginBottom: 0,
+    textAlign: 'left',
   },
   buttonOne: {
     marginTop: 0,

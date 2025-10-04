@@ -22,6 +22,12 @@ const tbaRoutes = require('./routes/tba');
 // const seasonsRoutes = require('./routes/seasons'); // Table not yet created in database
 // const { router: statisticsRoutes } = require('./routes/statistics');
 
+// 2025 Reefscape routes
+const scoutingRoutes = require('./routes/scouting');
+const robotsRoutes = require('./routes/robots');
+const reefscapeMatchesRoutes = require('./routes/reefscape_matches');
+const reefscapeStatsRoutes = require('./routes/reefscape_stats');
+
 // Import middleware
 const { errorHandler, notFound } = require('./middleware/errorHandling');
 const { validateApiKey, validateApiKeyForWrites } = require('./middleware/auth');
@@ -63,7 +69,7 @@ app.use(helmet({
 
 // CORS - allow our mobile app and web interface to connect
 app.use(cors({
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:19006'],
+    origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:8081', 'http://localhost:8082', 'http://localhost:19006'],
     credentials: true
 }));
 
@@ -178,13 +184,24 @@ app.get('/health', (req, res) => {
  */
 app.get('/api/info', (req, res) => {
     res.json({
-        message: 'Team 589 Falkon Robotics - Scouting API',
+        message: 'Team 589 Falkon Robotics - Scouting API (2025 Reefscape)',
         team: 'Team 589 Falkon Robotics',
-        version: '1.0.0',
+        version: '2.0.0',
+        game: '2025 Reefscape',
         endpoints: {
+            // Legacy 2024 routes
             teams: '/api/teams',
             matches: '/api/matches',
             robotInfo: '/api/robot-info',
+
+            // 2025 Reefscape routes
+            scouting: '/api/scouting',
+            robots: '/api/robots',
+            match: '/api/match',
+            stats: '/api/stats',
+            climbing: '/api/climbing',
+
+            // System
             dashboard: '/api/dashboard',
             tba: '/api/tba'
         },
@@ -194,11 +211,24 @@ app.get('/api/info', (req, res) => {
 
 // API Routes with validation middleware
 // Read operations (GET) are public, write operations (POST/PUT/DELETE) require API key
+
+// Legacy 2024 routes
 app.use('/api/teams', validateApiKeyForWrites, teamsRoutes);
 app.use('/api/matches', validateApiKeyForWrites, matchesRoutes);
 app.use('/api/robot-info', validateApiKeyForWrites, robotInfoRoutes);
+
+// 2025 Reefscape routes
+app.use('/api/scouting', validateApiKeyForWrites, scoutingRoutes);
+app.use('/api/robots', validateApiKeyForWrites, robotsRoutes);
+app.use('/api/match', validateApiKeyForWrites, reefscapeMatchesRoutes);
+app.use('/api/matches', validateApiKeyForWrites, reefscapeMatchesRoutes); // Also accessible via /matches
+app.use('/api/stats', validateApiKeyForWrites, reefscapeStatsRoutes);
+app.use('/api/climbing', validateApiKeyForWrites, reefscapeStatsRoutes); // Climbing is part of stats
+
+// System routes
 app.use('/api/dashboard', validateApiKeyForWrites, dashboardRoutes);
 app.use('/api/tba', validateApiKeyForWrites, tbaRoutes);
+
 // app.use('/api/seasons', validateApiKeyForWrites, seasonsRoutes); // Table not yet created
 // app.use('/api/statistics', validateApiKeyForWrites, statisticsRoutes);
 

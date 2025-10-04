@@ -428,8 +428,7 @@ const Auto = () => {
                     coral: coral,
                 }
 
-                console.log("Sending Auto Data: ", team_match_auto)
-
+                // Sending Auto Data
                 await robotApiService.sendAutoData(team_match_auto)
                 router.push(`../(MatchScouting)/Tele?team=${team}&regional=${regional}&match=${match}`)
                 // router.push('../(MatchScouting)/Tele')
