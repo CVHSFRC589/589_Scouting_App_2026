@@ -11,11 +11,8 @@ This guide helps **FRC Team 589** run the scouting app demo during rookie week m
 ### Prerequisites
 
 Before the meeting, make sure you have:
-- Completed the setup guide for your OS:
-  - **Windows**: `WINDOWS_SETUP_GUIDE.md`
-  - **macOS**: `MAC_SETUP_GUIDE.md`
-- Cloned the repository (see `APP_QUICKSTART.md` in the main Docs folder)
-- Node.js and npm installed (covered in setup guides)
+- Completed the `FRONTEND_SETUP_GUIDE.md` (covers Windows, macOS, and repository cloning)
+- Node.js and npm installed (covered in setup guide)
 
 ### Step 1: Install Dependencies
 
@@ -267,7 +264,7 @@ You'll see a **red database icon** ⭕ in the upper right corner of the home scr
 - Ask questions about scouting priorities and how we use data!
 
 ### For Students Interested in Development:
-- Review the setup guides: `WINDOWS_SETUP_GUIDE.md` or `MAC_SETUP_GUIDE.md`
+- Review the setup guide: `FRONTEND_SETUP_GUIDE.md` (covers both Windows and macOS)
 - Check out `PHYSICAL_DEVICE_GUIDE.md` for more testing options
 - Clone the repository and explore the code
 - Read `APP_QUICKSTART.md` in the main Docs folder
