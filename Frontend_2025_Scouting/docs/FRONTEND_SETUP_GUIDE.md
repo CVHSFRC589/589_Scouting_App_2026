@@ -383,11 +383,18 @@ Run this command:
 npm install
 ```
 
+**If you encounter peer dependency errors**, use:
+
+```bash
+npm install --legacy-peer-deps
+```
+
 **What's happening?**
 - `npm` (Node Package Manager) reads the `package.json` file
 - It downloads all required libraries into a `node_modules` folder
 - This includes React Native, Expo, and all other dependencies
 - This may take 2-5 minutes depending on your internet speed
+- The `--legacy-peer-deps` flag may be needed because our project uses React 19 (latest version)
 
 **You should see:**
 - Progress bars as packages are downloaded
@@ -420,9 +427,16 @@ sudo chown -R $(whoami) /usr/local/lib/node_modules
 </details>
 
 <details>
-<summary>Error: "peer dependency" warnings</summary>
+<summary>Error: "peer dependency" warnings or conflicts</summary>
 
 **Solution:** These are usually safe to ignore. React Native projects often have complex dependency trees. If the installation completes, you're good to go.
+
+**If installation fails with peer dependency errors:**
+```bash
+npm install --legacy-peer-deps
+```
+
+This tells npm to use the legacy (npm v6) peer dependency resolution strategy, which is more permissive. Our project uses React 19 (latest) which some packages may not officially support yet, so this flag may be needed.
 
 </details>
 
