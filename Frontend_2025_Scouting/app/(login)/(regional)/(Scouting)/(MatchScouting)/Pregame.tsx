@@ -1,10 +1,10 @@
 import { Link, router, useLocalSearchParams, useRouter } from "expo-router";
 import BackButton from '../../../../backButton';
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, StyleSheet, Animated, PanResponder, Pressable, TouchableOpacity, TextInput, FlatList, Dimensions, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, StyleSheet, Animated, PanResponder, Pressable, TouchableOpacity, TextInput, FlatList, Dimensions, ScrollView, KeyboardAvoidingView, Platform, Image } from "react-native";
 import { useFonts } from 'expo-font';
 import ProgressBar from '../../../../../components/ProgressBar'
-import { robotApiService } from "@/data/processing";
+import { robotApiService, getDemoMode } from "@/data/processing";
 import { error } from "console";
 
 
@@ -19,6 +19,8 @@ const Pregame = () => {
     const { returned } = useLocalSearchParams<{ returned: string }> ();
     // const options = ['1', '2', '3', '4', '5', 'Can add more in code']; // MUST ONLY BE NUMBERS, OR BAD STUFF HAPPENS
     // const secondOptions = ['1', '2', '3', 'Can add more in code']; // Still must only be numbers
+
+    const [isDemoMode, setIsDemoMode] = useState(false);
 
     const pan = useRef(new Animated.Value(0)).current;
 
@@ -137,6 +139,8 @@ const Pregame = () => {
         if (returned == "true") {
             setSecondTimeThru(true);
         }
+        // Check demo mode on mount
+        setIsDemoMode(getDemoMode());
     }, []);
 
     // const handleMatchSearch = (query: string) => {
@@ -329,6 +333,35 @@ const Pregame = () => {
     //     }
     // }, []);
 
+    // Swipe gesture handler for demo mode
+    const swipeGesture = useRef(
+        PanResponder.create({
+            onMoveShouldSetPanResponder: (evt, gestureState) => {
+                // Only activate for horizontal swipes
+                return isDemoMode && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 50;
+            },
+            onPanResponderRelease: (evt, gestureState) => {
+                if (!isDemoMode) return;
+
+                // Swipe right - go to home (back)
+                if (gestureState.dx > 100) {
+                    router.push("/(login)/home");
+                }
+                // Swipe left - go to next screen
+                else if (gestureState.dx < -100) {
+                    const demoTeam = selectedTeam || 589;
+                    const demoMatch = selectedMatch || 1;
+                    const demoRegional = selectedRegionalValue ?
+                        (selectedRegionalValue == "Hueneme" ? "ph" :
+                         selectedRegionalValue == "Ventura" ? "ve" :
+                         selectedRegionalValue == "East Bay" ? "be" :
+                         selectedRegionalValue == "Orange County" ? "oc" : "ph") : "ph";
+                    router.push(`./Auto?team=${demoTeam}&regional=${demoRegional}&match=${demoMatch}`);
+                }
+            },
+        })
+    ).current;
+
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -336,8 +369,29 @@ const Pregame = () => {
             keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
         <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-        <View style={styles.container}>
-            <BackButton buttonName="Home Page" />
+        <View style={styles.container} {...swipeGesture.panHandlers}>
+            <View style={styles.navigationRow}>
+                <BackButton buttonName="Home Page" />
+                {isDemoMode && (
+                    <Pressable
+                        style={styles.forwardButton}
+                        onPress={() => {
+                            // Use placeholder data for demo mode navigation
+                            const demoTeam = selectedTeam || 589;
+                            const demoMatch = selectedMatch || 1;
+                            const demoRegional = selectedRegionalValue ?
+                                (selectedRegionalValue == "Hueneme" ? "ph" :
+                                 selectedRegionalValue == "Ventura" ? "ve" :
+                                 selectedRegionalValue == "East Bay" ? "be" :
+                                 selectedRegionalValue == "Orange County" ? "oc" : "ph") : "ph";
+
+                            router.push(`./Auto?team=${demoTeam}&regional=${demoRegional}&match=${demoMatch}`);
+                        }}
+                    >
+                        <Image style={styles.forwardButtonIcon} source={require('./../../../../../assets/images/back_arrow.png')} />
+                    </Pressable>
+                )}
+            </View>
             <ProgressBar currentStep="Pre" />
 
             <Text style={styles.title}>Pregame</Text>
@@ -498,7 +552,7 @@ const Pregame = () => {
                 <Text style={[styles.text, { flex: 1, textAlign: 'right' }]}>Processor</Text>
             </View>
 
-            <Pressable style={styles.button} onPress={() => nextButton(selectedRegionalValue, selectedTeam, selectedMatch, auto_starting_position, secondTimeThru)}>)
+            <Pressable style={styles.button} onPress={() => nextButton(selectedRegionalValue, selectedTeam, selectedMatch, auto_starting_position, secondTimeThru)}>
                 <Text style={styles.buttonText}>Next</Text>
             </Pressable>
         </View>
@@ -558,6 +612,25 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'flex-start',
         padding: 25,
+    },
+    navigationRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
+    },
+    forwardButton: {
+        borderRadius: 4,
+        borderColor: 'white',
+        width: 20,
+        height: 20,
+        marginBottom: 15,
+        marginTop: 25,
+        transform: [{ rotate: '180deg' }],
+    },
+    forwardButtonIcon: {
+        width: 20,
+        height: 20,
     },
     group: {
         flexDirection: 'row', // Arranges items horizontally (side by side)

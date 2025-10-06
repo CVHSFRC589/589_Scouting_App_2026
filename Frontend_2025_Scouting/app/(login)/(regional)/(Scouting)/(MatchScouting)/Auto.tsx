@@ -1,11 +1,11 @@
 import { Link, router, useGlobalSearchParams, useRouter } from "expo-router";
 import BackButton from '../../../../backButton';
-import React, { useState } from "react";
-import { View, Text, Pressable, StyleSheet, Image, ScrollView } from "react-native";
+import React, { useState, useRef, useEffect } from "react";
+import { View, Text, Pressable, StyleSheet, Image, ScrollView, PanResponder } from "react-native";
 // import { underDampedSpringCalculations } from "react-native-reanimated/lib/typescript/animation/springUtils";
 import { time } from "console";
 import { start } from "repl";
-import { robotApiService } from "@/data/processing";
+import { robotApiService, getDemoMode } from "@/data/processing";
 import ProgressBar from '../../../../../components/ProgressBar'
 import { stringify } from "querystring";
 import StateBackButton from "@/components/StateBackButton";
@@ -14,10 +14,11 @@ import StateBackButton from "@/components/StateBackButton";
 const Auto = () => {
     const router = useRouter();
     const {team} = useGlobalSearchParams<{ team:string } > ();
-    //regional string needs formatting to match backend naming scheme. 
+    //regional string needs formatting to match backend naming scheme.
     const {regional} = useGlobalSearchParams<{ regional:string } > ();
     const {match} = useGlobalSearchParams<{ match:string } > ();
-    
+
+    const [isDemoMode, setIsDemoMode] = useState(false);
     const [isToggled, setIsToggled] = useState(false);
     const toggle = () => {
         setIsToggled((prev) => !prev); // Toggle the current state
@@ -137,23 +138,58 @@ const Auto = () => {
     };
     
     const incrementButtonStyle = (key: string) => {
-      const isMax = 
+      const isMax =
         (key === 'coral1' || key === 'coral2' || key === 'coral3') && counts[key] === 12 ||
         key === 'coral4' && counts[key] === 36 ||
         key === 'removed' && counts[key] === 6 ||
         key === 'processed' && counts[key] === 9;
-    
+
       // Check if the key is 'removed' or 'processed' or 'net' to use algaeCountButton style
-      const buttonStyle = 
+      const buttonStyle =
         key === 'removed' || key === 'processed' || key === 'net' ? styles.algaeCountButton : styles.countButton;
-    
+
       return isMax ? { ...buttonStyle, backgroundColor: '#5792B9' } : buttonStyle;
     };``
 
+    useEffect(() => {
+        setIsDemoMode(getDemoMode());
+    }, []);
+
+    // Swipe gesture handler for demo mode
+    const swipeGesture = useRef(
+        PanResponder.create({
+            onMoveShouldSetPanResponder: (evt, gestureState) => {
+                return isDemoMode && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 50;
+            },
+            onPanResponderRelease: (evt, gestureState) => {
+                if (!isDemoMode) return;
+
+                // Swipe right - go back to Pregame
+                if (gestureState.dx > 100) {
+                    router.push(`../Pregame?returned=true`);
+                }
+                // Swipe left - go to Tele
+                else if (gestureState.dx < -100) {
+                    router.push(`./Tele?team=${team}&regional=${regional}&match=${match}`);
+                }
+            },
+        })
+    ).current;
+
     return (
         <ScrollView>
-        <View style={styles.container}>
-            <StateBackButton buttonName="Home Page" />
+        <View style={styles.container} {...swipeGesture.panHandlers}>
+            <View style={styles.navigationRow}>
+                <StateBackButton buttonName="Home Page" />
+                {isDemoMode && (
+                    <Pressable
+                        style={styles.forwardButton}
+                        onPress={() => router.push(`./Tele?team=${team}&regional=${regional}&match=${match}`)}
+                    >
+                        <Image style={styles.forwardButtonIcon} source={require('./../../../../../assets/images/back_arrow.png')} />
+                    </Pressable>
+                )}
+            </View>
             <ProgressBar currentStep="Auto" />
 
             <Text style={styles.title}>Autonomous</Text>
@@ -451,6 +487,25 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'flex-start',
         padding: 25,
+    },
+    navigationRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
+    },
+    forwardButton: {
+        borderRadius: 4,
+        borderColor: 'white',
+        width: 20,
+        height: 20,
+        marginBottom: 15,
+        marginTop: 25,
+        transform: [{ rotate: '180deg' }],
+    },
+    forwardButtonIcon: {
+        width: 20,
+        height: 20,
     },
     image: {
         width: '15%',  // Set the width of the image

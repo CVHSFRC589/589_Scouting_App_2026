@@ -1,17 +1,19 @@
 import { Link, router, useGlobalSearchParams, useRouter } from "expo-router";
 import BackButton from '../../../../backButton';
-import React, { useState } from "react";
-import { View, Text, Pressable, StyleSheet, Image, ScrollView, Modal } from "react-native";
-import { robotApiService } from "@/data/processing";
+import React, { useState, useRef, useEffect } from "react";
+import { View, Text, Pressable, StyleSheet, Image, ScrollView, Modal, PanResponder } from "react-native";
+import { robotApiService, getDemoMode } from "@/data/processing";
 import ProgressBar from '../../../../../components/ProgressBar'
 
 
 const Tele = () => {
     const router = useRouter();
     const {team} = useGlobalSearchParams<{ team:string } > ();
-    //regional string needs formatting to match backend naming scheme. 
+    //regional string needs formatting to match backend naming scheme.
     const {regional} = useGlobalSearchParams<{ regional:string } > ();
     const {match} = useGlobalSearchParams<{ match:string } > ();
+
+    const [isDemoMode, setIsDemoMode] = useState(false);
 
     // Initialize the state variable `count` with an initial value of 0
     const [counts, setCounts] = useState<{ [key: string]: number }>({
@@ -149,12 +151,59 @@ const Tele = () => {
         setSelectedClimb((prev) => (prev === value ? null : value)); // Toggle the selected button
       };
 
-  
+    useEffect(() => {
+        setIsDemoMode(getDemoMode());
+    }, []);
+
+    // Swipe gesture handler for demo mode
+    const swipeGesture = useRef(
+        PanResponder.create({
+            onMoveShouldSetPanResponder: (evt, gestureState) => {
+                return isDemoMode && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 50;
+            },
+            onPanResponderRelease: (evt, gestureState) => {
+                if (!isDemoMode) return;
+
+                // Swipe right - go back to Auto
+                if (gestureState.dx > 100) {
+                    router.push(`./Auto?team=${team}&regional=${regional}&match=${match}`);
+                }
+                // Swipe left - go to Post
+                else if (gestureState.dx < -100) {
+                    router.push({
+                        pathname: "./Post",
+                        params: {
+                            team_num: team,
+                            match_num: match,
+                            regional: regional
+                        }
+                    });
+                }
+            },
+        })
+    ).current;
 
     return (
         <ScrollView>
-        <View style={styles.container}>
-        <BackButton buttonName="Home Page" />
+        <View style={styles.container} {...swipeGesture.panHandlers}>
+        <View style={styles.navigationRow}>
+            <BackButton buttonName="Home Page" />
+            {isDemoMode && (
+                <Pressable
+                    style={styles.forwardButton}
+                    onPress={() => router.push({
+                        pathname: "./Post",
+                        params: {
+                            team_num: team,
+                            match_num: match,
+                            regional: regional
+                        }
+                    })}
+                >
+                    <Image style={styles.forwardButtonIcon} source={require('./../../../../../assets/images/back_arrow.png')} />
+                </Pressable>
+            )}
+        </View>
         <ProgressBar currentStep="Tele" />
 
             <Text style={styles.title}>Teleoperation</Text>
@@ -505,6 +554,25 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'flex-start',
         padding: 25,
+    },
+    navigationRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
+    },
+    forwardButton: {
+        borderRadius: 4,
+        borderColor: 'white',
+        width: 20,
+        height: 20,
+        marginBottom: 15,
+        marginTop: 25,
+        transform: [{ rotate: '180deg' }],
+    },
+    forwardButtonIcon: {
+        width: 20,
+        height: 20,
     },
     image: {
         width: '15%',  // Set the width of the image

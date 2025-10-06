@@ -2,9 +2,9 @@ import { Link, router, useLocalSearchParams, useRouter } from "expo-router";
 import BackButton from "../../../../backButton";
 import { useFonts } from "expo-font";
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, StyleSheet, Animated, PanResponder, Pressable, TextInput, Dimensions, ScrollView, Alert, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, StyleSheet, Animated, PanResponder, Pressable, TextInput, Dimensions, ScrollView, Alert, KeyboardAvoidingView, Platform, Image } from "react-native";
 import ProgressBar from '../../../../../components/ProgressBar'
-import { robotApiService } from "@/data/processing";
+import { robotApiService, getDemoMode } from "@/data/processing";
 
 
 const Post = () => {
@@ -14,19 +14,21 @@ const Post = () => {
     regional: string;
   }>();
 
+  const [isDemoMode, setIsDemoMode] = useState(false);
+
   // Validate URL parameters are present
   useEffect(() => {
     if (!params.team_num || !params.match_num || !params.regional) {
       Alert.alert(
         'Error',
         'Missing required parameters',
-        [{ 
-          text: 'OK', 
+        [{
+          text: 'OK',
           onPress: () => router.push("/")
         }]
       );
     }
-
+    setIsDemoMode(getDemoMode());
   }, [params]);
 
   const [text, setText] = useState('');
@@ -139,6 +141,34 @@ const Post = () => {
   const [malfunction, set_malfunction] = useState<boolean>(false);
   const [driverRating, setDriverRating] = useState<number>(5);
 
+  // Swipe gesture handler for demo mode
+  const swipeGesture = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        return isDemoMode && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 50;
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        if (!isDemoMode) return;
+
+        // Swipe right - go back to Tele
+        if (gestureState.dx > 100) {
+          router.push({
+            pathname: "./Tele",
+            params: {
+              team: params.team_num,
+              match: params.match_num,
+              regional: params.regional
+            }
+          });
+        }
+        // Swipe left - go to Home
+        else if (gestureState.dx < -100) {
+          router.push("/(login)/home");
+        }
+      },
+    })
+  ).current;
+
   const handleSubmit = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
@@ -230,8 +260,18 @@ const Post = () => {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
     <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-    <View style={styles.container}>
-              <BackButton buttonName="Home Page" />
+    <View style={styles.container} {...swipeGesture.panHandlers}>
+              <View style={styles.navigationRow}>
+                <BackButton buttonName="Home Page" />
+                {isDemoMode && (
+                    <Pressable
+                        style={styles.forwardButton}
+                        onPress={() => router.push("/(login)/home")}
+                    >
+                        <Image style={styles.forwardButtonIcon} source={require('./../../../../../assets/images/back_arrow.png')} />
+                    </Pressable>
+                )}
+              </View>
               <ProgressBar currentStep="Post" />
       <Text style={styles.title}>Post-Game</Text>
       <Text style={styles.subtitle}>Driver Rating</Text>
@@ -347,6 +387,25 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "flex-start",
     padding: 25,
+  },
+  navigationRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+  },
+  forwardButton: {
+    borderRadius: 4,
+    borderColor: 'white',
+    width: 20,
+    height: 20,
+    marginBottom: 15,
+    marginTop: 25,
+    transform: [{ rotate: '180deg' }],
+  },
+  forwardButtonIcon: {
+    width: 20,
+    height: 20,
   },
   title: {
     fontFamily: "Koulen",

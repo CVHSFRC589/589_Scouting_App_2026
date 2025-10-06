@@ -112,6 +112,20 @@ The app will run in **demo mode** with sample data for 6 FRC teams:
 
 You'll see a **red database icon** ⭕ in the upper right corner of the home screen indicating demo mode is active.
 
+### Step 5: Demo Mode Navigation
+
+In demo mode, you have special navigation features to quickly move through the scouting workflow:
+
+**Arrow Navigation:**
+- Look for the **forward arrow (>)** in the top-right corner of each match scouting screen
+- Tap it to skip to the next screen without filling out forms
+- Works on all match scouting screens: Pregame → Auto → Tele → Post
+
+**Swipe Gestures:**
+- **Swipe left** to go to the next screen
+- **Swipe right** to go back to the previous screen
+- Great for quickly demonstrating the full scouting workflow!
+
 ---
 
 ## What Can You Do in Demo Mode?
@@ -207,6 +221,12 @@ You'll see a **red database icon** ⭕ in the upper right corner of the home scr
 - Experiment with the **starting position slider** - click anywhere to snap to that position
 - Practice using the **number pad** that appears for team and match entry
 - Try the **keyboard toggle** on pit scouting to switch between number pad and full keyboard
+
+### Using Demo Navigation Features:
+- **Forward arrows (>)** appear in the top-right corner - tap to skip to the next screen
+- **Swipe left** on any match scouting screen to advance forward
+- **Swipe right** to go back to the previous screen
+- These features only appear in demo mode to help you learn the workflow quickly!
 
 ---
 
