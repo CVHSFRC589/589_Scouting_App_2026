@@ -3,6 +3,113 @@
  * Web interface for database management
  */
 
+/** 
+ * @swagger
+ * /api/dashboard:
+ *  get:
+ *    summary: Backend Dashboard Home Page
+ *    description: Accessable via browser at /, serves an HTML file
+ *    tags: [Dashboard]
+ * /api/dashboard/stats:
+ *  get:
+ *    summary: Dashboard Statistics
+ *    description: Retrieve key statistics for the scouting app
+ *    tags: [Dashboard]
+ *    responses:
+ *      200:
+ *        description: Statistics retrieved successfully
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              properties:
+ *                success:
+ *                  type: boolean
+ *                  example: true
+ *                data:
+ *                  type: object
+ *                  properties:
+ *                    totalTeams:
+ *                      type: integer
+ *                      example: 42
+ *                    totalMatches:
+ *                      type: integer
+ *                      example: 120
+ *                    totalSeasons:
+ *                      type: integer
+ *                      example: 1
+ *                    activeSeasons:
+ *                      type: integer
+ *                      example: 1
+ *                    totalRegionals:
+ *                      type: integer
+ *                      example: 1
+ * 
+ * /api/dashboard/activity:
+ *   get:
+ *     summary: Server Activity Logs
+ *     description: Retrieve recent server activity logs
+ *     tags: [Dashboard]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           description: Number of log entries to retrieve (default 50)
+ *     responses:
+ *       200:
+ *         description: Activity logs retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       timestamp:
+ *                         type: string
+ *                         format: date-time
+ *                         example: "2023-01-01T12:00:00Z"
+ *                       type:
+ *                         type: string
+ *                         example: "info"
+ *                       message:
+ *                         type: string
+ *                         example: "Server started"
+ *                       details:
+ *                         type: object
+ *                         additionalProperties: true
+ * 
+ * /api/dashboard/api-key:
+ *   get:
+ *     summary: Get API Key for Dashboard Write Operations
+ *     description: Retrieve the API key for performing write operations on the dashboard. Only accessible from localhost.
+ *     tags: [Dashboard]
+ *     responses:
+ *       200:
+ *         description: API key retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     apiKey:
+ *                       type: string
+ *                       example: "your-api-key"
+ */
+
 const express = require('express');
 const path = require('path');
 const { supabase, setLogger: setDatabaseLogger } = require('../config/database');

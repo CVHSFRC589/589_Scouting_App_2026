@@ -126,6 +126,104 @@ const matchSchema = Joi.object({
  *                         $ref: '#/components/schemas/Match'
  *                     pagination:
  *                       $ref: '#/components/schemas/Pagination'
+ * 
+ * /api/matches/{id}:
+ *   get:
+ *     summary: Get a specific match by ID
+ *     description: Grab a specific match record using its unique ID.
+ *     tags: [Matches]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: The unique ID of the match
+ *         schema:
+ *           type: integer
+ *           example: 1
+ *     responses:
+ *       200:
+ *         description: Match data retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Match'
+ * /api/matches:
+ *   post:
+ *     summary: Submit match scouting data
+ *     description: |
+ *       **Learning Note**: This is the most important endpoint! It demonstrates:
+ *       - Complex data validation with Joi
+ *       - Creating related records (team if doesn't exist)
+ *       - Triggering side effects (statistics calculation)
+ *
+ *       **Use Case**: Mobile app submits match data collected during competition.
+ *
+ *       **Workflow**:
+ *       1. Validates all field values
+ *       2. Creates team if it doesn't exist
+ *       3. Saves match data
+ *       4. Triggers statistics recalculation (async)
+ *       5. Returns saved match with team info
+ *
+ *       **Try it**: Submit a test match for Team 589!
+ *     tags: [Matches]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Match'
+ *           example:
+ *             team_number: 589
+ *             match_number: 15
+ *             regional: "Orange County"
+ *             scouter_name: "John Doe"
+ *             starting_position: "Middle"
+ *             auto_taxi: true
+ *             auto_m1: 2
+ *             auto_s1: 1
+ *             teleop_amp_attempts: 8
+ *             teleop_amp_scored: 6
+ *             teleop_speaker_attempts: 12
+ *             teleop_speaker_scored: 9
+ *             teleop_ground_intake: 5
+ *             teleop_source_intake: 3
+ *             endgame_climb: "Double Climb"
+ *             endgame_trap_count: 1
+ *             driver_rating: 4
+ *             robot_disabled: false
+ *             played_defense: false
+ *             comments: "Excellent autonomous, good speaker accuracy"
+ *     responses:
+ *       201:
+ *         description: Match data saved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/Match'
+ *                     message:
+ *                       type: string
+ *                       example: "Match created successfully"
+ *       400:
+ *         description: Validation error (invalid field values)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               success: false
+ *               error:
+ *                 message: "\"teleop_amp_scored\" must be less than or equal to ref:teleop_amp_attempts"
  */
 router.get('/', asyncHandler(async (req, res) => {
     const { team_number, regional, match_number, limit = 50, offset = 0 } = req.query;
@@ -216,81 +314,6 @@ router.get('/:id', asyncHandler(async (req, res) => {
     });
 }));
 
-/**
- * @swagger
- * /api/matches:
- *   post:
- *     summary: Submit match scouting data
- *     description: |
- *       **Learning Note**: This is the most important endpoint! It demonstrates:
- *       - Complex data validation with Joi
- *       - Creating related records (team if doesn't exist)
- *       - Triggering side effects (statistics calculation)
- *
- *       **Use Case**: Mobile app submits match data collected during competition.
- *
- *       **Workflow**:
- *       1. Validates all field values
- *       2. Creates team if it doesn't exist
- *       3. Saves match data
- *       4. Triggers statistics recalculation (async)
- *       5. Returns saved match with team info
- *
- *       **Try it**: Submit a test match for Team 589!
- *     tags: [Matches]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/Match'
- *           example:
- *             team_number: 589
- *             match_number: 15
- *             regional: "Orange County"
- *             scouter_name: "John Doe"
- *             starting_position: "Middle"
- *             auto_taxi: true
- *             auto_m1: 2
- *             auto_s1: 1
- *             teleop_amp_attempts: 8
- *             teleop_amp_scored: 6
- *             teleop_speaker_attempts: 12
- *             teleop_speaker_scored: 9
- *             teleop_ground_intake: 5
- *             teleop_source_intake: 3
- *             endgame_climb: "Double Climb"
- *             endgame_trap_count: 1
- *             driver_rating: 4
- *             robot_disabled: false
- *             played_defense: false
- *             comments: "Excellent autonomous, good speaker accuracy"
- *     responses:
- *       201:
- *         description: Match data saved successfully
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/SuccessResponse'
- *                 - type: object
- *                   properties:
- *                     data:
- *                       $ref: '#/components/schemas/Match'
- *                     message:
- *                       type: string
- *                       example: "Match created successfully"
- *       400:
- *         description: Validation error (invalid field values)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *             example:
- *               success: false
- *               error:
- *                 message: "\"teleop_amp_scored\" must be less than or equal to ref:teleop_amp_attempts"
- */
 router.post('/', asyncHandler(async (req, res) => {
     // Validate input data
     const { error: validationError, value } = matchSchema.validate(req.body);

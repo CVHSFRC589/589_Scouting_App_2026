@@ -12,14 +12,10 @@ const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'Team 589 FRC Scouting API - Educational Documentation',
-      version: '1.0.0',
+      title: 'Team 589 FRC Scouting API Documentation',
+      version: '0.1.0',
       description: `
-# 🤖 Team 589 Falkon Robotics Scouting API
-
-An educational REST API for FRC scouting data collection and analysis.
-
-## 🎓 Learning Objectives
+# 589 Demo Scouting API
 
 This API demonstrates professional software engineering concepts for high school students:
 
@@ -38,43 +34,6 @@ All API requests require an API key in the header:
 x-api-key: dev-key-123
 \`\`\`
 
-### Try It Out!
-1. Click on any endpoint below
-2. Click "Try it out"
-3. Fill in parameters
-4. Click "Execute"
-5. See the response!
-
-### Response Format
-All endpoints return JSON in this format:
-\`\`\`json
-{
-  "success": true,
-  "data": [ /* your data here */ ],
-  "message": "Optional success message"
-}
-\`\`\`
-
-Or on error:
-\`\`\`json
-{
-  "success": false,
-  "error": {
-    "message": "Description of what went wrong"
-  }
-}
-\`\`\`
-
-## 📊 Data Flow
-
-\`\`\`
-Mobile App (React Native) → REST API (You are here!) → Supabase (PostgreSQL)
-                                 ↓
-                         Statistics Engine
-                                 ↓
-                         Rankings & Analysis
-\`\`\`
-
 ## 🏆 Competition Workflow
 
 1. **Pre-Competition**: Import teams from The Blue Alliance
@@ -83,60 +42,10 @@ Mobile App (React Native) → REST API (You are here!) → Supabase (PostgreSQL)
 4. **Statistics**: Calculate accuracy, averages, rankings
 5. **Alliance Selection**: Use data to pick optimal partners
 
-## 📚 Core Concepts
-
-### Teams
-Base entity representing FRC teams. Each team has a number (e.g., 589) and participates in regionals.
-
-### Matches
-Performance data for one team in one match. Includes:
-- **Pregame**: Starting position
-- **Autonomous**: Scoring in first 15 seconds
-- **Teleoperated**: Human-controlled period
-- **Endgame**: Climbing and trap scoring
-- **Postgame**: Ratings, notes, observations
-
-### Robot Info (Pit Scouting)
-Physical characteristics and capabilities discovered before matches start.
-
-### Statistics
-Calculated metrics from match data:
-- Accuracy percentages (scored/attempts)
-- Averages per match
-- Rankings within regional
-
-## 🔗 External Integrations
-
-**The Blue Alliance (TBA)**: Official FRC data source
-- Import team rosters
-- Get event schedules
-- Historical competition data
-
-## 💡 Tips for Frontend Development
-
-- Use the "Try it out" button to test before coding
-- Check the response schemas to understand data structure
-- Always handle both success and error cases
-- Use query parameters to filter large datasets
-- POST requests require \`Content-Type: application/json\` header
-
-## 🆘 Support
-
-**Backend Team**: Check with your mentor or backend team lead
-**Documentation Issues**: Report bugs in team Slack/Discord
-**API Errors**: Check response error message first, then ask for help
-
----
-
 Built with ❤️ by Team 589 Falkon Robotics students
       `,
-      contact: {
-        name: 'Team 589 Falkon Robotics',
-        email: '589falkonrobotics@gmail.com',
-        url: 'https://www.cvrobots.com/'
-      },
       license: {
-        name: 'MIT',
+        name: 'MIT License',
         url: 'https://opensource.org/licenses/MIT'
       }
     },
@@ -153,19 +62,19 @@ Built with ❤️ by Team 589 Falkon Robotics students
     tags: [
       {
         name: 'Teams',
-        description: 'Team roster management - CRUD operations for FRC teams'
+        description: 'Team roster management - CRUD operations for FRC teams (To be updated with real routes)'
       },
       {
         name: 'Matches',
-        description: 'Match scouting data - Performance tracking for individual matches'
+        description: 'Match scouting data - Performance tracking for individual matches (To be updated with real routes)'
       },
       {
         name: 'Robot Info',
-        description: 'Pit scouting - Robot capabilities and physical characteristics'
+        description: 'Pit scouting - Robot capabilities and physical characteristics (To be updated with real routes)'
       },
       {
         name: 'Statistics',
-        description: 'Analytics - Calculated metrics and rankings'
+        description: 'Analytics - Calculated metrics and rankings (To be updated with real routes)'
       },
       {
         name: 'Dashboard',
@@ -173,11 +82,11 @@ Built with ❤️ by Team 589 Falkon Robotics students
       },
       {
         name: 'TBA Integration',
-        description: 'The Blue Alliance - Import official FRC competition data'
+        description: 'The Blue Alliance - Import official FRC competition data (To be updated with real routes)'
       },
       {
         name: 'System',
-        description: 'Health checks and system information'
+        description: 'Health checks and system information (To be updated with real routes)'
       }
     ],
     components: {
