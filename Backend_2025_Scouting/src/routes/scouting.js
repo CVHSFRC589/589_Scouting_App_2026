@@ -134,14 +134,14 @@ router.put('/match/auto', async (req, res) => {
 
         // Delete existing auto coral/algae actions for this match
         await supabase
-            .from('coral_actions')
+            .from('coral')
             .delete()
             .eq('team_num', team_num)
             .eq('match_num', match_num)
             .eq('regional', regional);
 
         await supabase
-            .from('algae_actions')
+            .from('algae')
             .delete()
             .eq('team_num', team_num)
             .eq('match_num', match_num)
@@ -159,7 +159,7 @@ router.put('/match/auto', async (req, res) => {
             }));
 
             const { error: coralError } = await supabase
-                .from('coral_actions')
+                .from('coral')
                 .insert(coralRecords);
 
             if (coralError) {
@@ -183,7 +183,7 @@ router.put('/match/auto', async (req, res) => {
             }));
 
             const { error: algaeError } = await supabase
-                .from('algae_actions')
+                .from('algae')
                 .insert(algaeRecords);
 
             if (algaeError) {
@@ -250,7 +250,7 @@ router.put('/match/tele', async (req, res) => {
             }));
 
             await supabase
-                .from('coral_actions')
+                .from('coral')
                 .insert(coralRecords);
         }
 
@@ -265,7 +265,7 @@ router.put('/match/tele', async (req, res) => {
             }));
 
             await supabase
-                .from('algae_actions')
+                .from('algae')
                 .insert(algaeRecords);
         }
 

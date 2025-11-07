@@ -83,6 +83,13 @@ Press `Ctrl+C` in both terminal windows.
 
 ## Troubleshooting
 
+**'nodemon' is not recognized error?**
+This means dependencies haven't been installed. Run:
+```bash
+cd Backend_2025_Scouting
+npm install
+```
+
 **Backend won't start?**
 ```bash
 cd Backend_2025_Scouting

@@ -53,7 +53,7 @@ router.get('/:regional/:team/:match', async (req, res) => {
 
         // Get individual coral actions
         const { data: coralData, error: coralError } = await supabase
-            .from('coral_actions')
+            .from('coral')
             .select('*')
             .eq('team_num', team_num)
             .eq('match_num', match_num)
@@ -64,7 +64,7 @@ router.get('/:regional/:team/:match', async (req, res) => {
 
         // Get individual algae actions
         const { data: algaeData, error: algaeError } = await supabase
-            .from('algae_actions')
+            .from('algae')
             .select('*')
             .eq('team_num', team_num)
             .eq('match_num', match_num)
@@ -137,7 +137,7 @@ router.get('/all/:regional/:team', async (req, res) => {
 
         // Get all coral actions for this team
         const { data: allCoral, error: coralError } = await supabase
-            .from('coral_actions')
+            .from('coral')
             .select('*')
             .eq('team_num', team_num)
             .eq('regional', regional)
@@ -148,7 +148,7 @@ router.get('/all/:regional/:team', async (req, res) => {
 
         // Get all algae actions for this team
         const { data: allAlgae, error: algaeError } = await supabase
-            .from('algae_actions')
+            .from('algae')
             .select('*')
             .eq('team_num', team_num)
             .eq('regional', regional)
