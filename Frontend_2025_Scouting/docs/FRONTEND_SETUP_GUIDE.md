@@ -2,8 +2,6 @@
 
 **Welcome to Team 589!** This guide will walk you through setting up your development environment from scratch. By the end, you'll have the scouting mobile app running on your laptop and connected to a simulator or physical device.
 
-> 📝 **Note:** If you've already completed the **Backend Setup Guide**, you can skip Steps 1.1-1.2 and Step 2.1 (Node.js, Git, and VS Code are already installed). However, you should still complete Step 1.3 (Expo Go) and Step 1.4 (mobile emulators) which are frontend-specific. Then jump to [Step 2.2: Install Frontend Extensions](#22-install-essential-vs-code-extensions).
-
 ## Table of Contents
 1. [Install Required Software](#step-1-install-required-software)
 2. [Set Up Visual Studio Code](#step-2-set-up-visual-studio-code)
@@ -18,8 +16,6 @@
 ## Step 1: Install Required Software
 
 ### 1.1 Install Node.js (v20 or higher)
-
-> ✅ **Already completed the Backend Setup Guide?** You can skip Section 1.1 - Node.js is already installed.
 
 Node.js is the runtime environment that powers our React Native development tools.
 
@@ -69,8 +65,6 @@ nvm use 20
 
 ### 1.2 Install Git
 
-> ✅ **Already completed the Backend Setup Guide?** You can skip Section 1.2 - Git is already installed.
-
 Git is the version control system we use to manage code.
 
 **For Windows:**
@@ -95,8 +89,6 @@ If not installed, you'll be prompted to install Xcode Command Line Tools. Click 
 
 ### 1.3 Install Expo Go Mobile App (For Testing on Physical Devices)
 
-> 📱 **This step is frontend-specific** - complete it even if you did the Backend Setup Guide.
-
 ***On your iPhone or Android device:***
 
 **For iOS (iPhone/iPad):**
@@ -115,14 +107,14 @@ If not installed, you'll be prompted to install Xcode Command Line Tools. Click 
 <summary><h3>Install Mobile Emulator/Simulator (Optional but Recommended)</h3></summary>
 <details>
 
-> 📱 **This step is frontend-specific** - complete it even if you did the Backend Setup Guide.
-
 **For Mac (iOS Simulator):**
 1. Install Xcode from the Mac App Store (this is large - 10+ GB)
 2. Once installed, open Xcode
 3. Go to `Xcode` > `Preferences` > `Components`
 4. Install the latest iOS Simulator version
 5. The simulator will be available when you run the app
+
+> **NOTE:** Xcode and the iOS emulator is only available for Macs
 
 **For Windows/Mac (Android Emulator):**
 1. Visit: https://developer.android.com/studio
@@ -146,8 +138,6 @@ If not installed, you'll be prompted to install Xcode Command Line Tools. Click 
 
 ### 2.1 Install VS Code
 
-> ✅ **Already completed the Backend Setup Guide?** You can skip Section 2.1 (VS Code installation). However, you should still install the frontend-specific extensions in Section 2.2.
-
 **For Windows:**
 1. Visit: https://code.visualstudio.com/download
 2. Download the Windows version
@@ -163,8 +153,6 @@ If not installed, you'll be prompted to install Xcode Command Line Tools. Click 
 
 ### 2.2 Install Essential VS Code Extensions
 
-> 📝 **Note:** If you completed the Backend Setup Guide, you may already have Claude Code, ESLint, Prettier, GitLens, and npm Intellisense installed. You can skip those and focus on the frontend-specific extensions: **React Native Tools**, **ES7+ React/Redux/React-Native snippets**, **Auto Rename Tag**, and **Expo Tools**.
-
 Once VS Code is open:
 
 1. **Open the Extensions view:**
@@ -173,10 +161,6 @@ Once VS Code is open:
 2. **Install these essential extensions** (search for each and click "Install"):
 
    **Required Extensions:**
-   - **Claude Code** - AI-powered coding assistant
-     - Search: "Claude Code"
-     - Publisher: Anthropic
-     - Install link: [Claude Code Extension](https://marketplace.visualstudio.com/items?itemName=anthropic.claude-code)
 
    - **ESLint** - JavaScript code quality
      - Search: "ESLint"
@@ -187,11 +171,16 @@ Once VS Code is open:
      - Publisher: Prettier
 
    **Highly Recommended Extensions:**
-   - **React Native Tools** - Essential for React Native development ⭐ Frontend-specific
+   - **Claude Code** - AI-powered coding assistant
+     - Search: "Claude Code"
+     - Publisher: Anthropic
+     - Install link: [Claude Code Extension](https://marketplace.visualstudio.com/items?itemName=anthropic.claude-code)
+
+   - **React Native Tools** - Essential for React Native development 
      - Search: "React Native Tools"
      - Publisher: Microsoft
 
-   - **ES7+ React/Redux/React-Native snippets** - Code shortcuts for React ⭐ Frontend-specific
+   - **ES7+ React/Redux/React-Native snippets** - Code shortcuts for React 
      - Search: "ES7+ React/Redux/React-Native snippets"
      - Publisher: dsznajder
 
@@ -207,11 +196,11 @@ Once VS Code is open:
      - Search: "npm Intellisense"
      - Publisher: Christian Kohler
 
-   - **Auto Rename Tag** - Automatically rename paired tags ⭐ Frontend-specific
+   - **Auto Rename Tag** - Automatically rename paired tags 
      - Search: "Auto Rename Tag"
      - Publisher: Jun Han
 
-   - **Expo Tools** - Expo development support ⭐ Frontend-specific
+   - **Expo Tools** - Expo development support
      - Search: "Expo Tools"
      - Publisher: Expo
 
@@ -225,8 +214,6 @@ Once VS Code is open:
 ---
 
 ## Step 3: Clone the Repository
-
-> 📝 **Note:** If you already cloned the repository while following the Backend Setup Guide, you can skip Section 3.2. Just navigate to the Frontend folder: `cd 589_Scouting_App_2026/Frontend_2025_Scouting`
 
 ### 3.1 Choose a Location for Your Code
 
@@ -247,11 +234,6 @@ cd ~/Projects/589
 ```
 
 ### 3.2 Clone the Repository from GitHub
-
-> ✅ **Already cloned the repository for the Backend?** Skip this section and navigate to the frontend folder instead:
-> ```bash
-> cd 589_Scouting_App_2026/Frontend_2025_Scouting
-> ```
 
 **Team 589 Scouting Frontend Repository:**
 
@@ -283,86 +265,79 @@ code .
 
 ## Step 4: Configure the Application
 
-### 4.1 About the Backend Connection
+### 4.1 About the Backend (aka Database) Connection
 
-Our React Native app connects to the **Team 589 Scouting Backend API** to fetch and submit scouting data. The backend is already set up and hosted.
+Our React Native app connects directly to **Supabase** (a cloud PostgreSQL database with built-in authentication and real-time features) to fetch and submit scouting data.
 
-**Backend Details:**
-- **Local Development URL:** `http://localhost:3000` (when running backend locally)
-- **Production URL:** Will be provided by your team lead
+**Important:** You need to complete the Supabase setup before the app will work. See your team lead for the shared Supabase credentials, or refer to [SUPABASE_SETUP_GUIDE.md](./SUPABASE_SETUP_GUIDE.md) to set up your own Supabase project.
 
-### 4.2 Get Your API Key
+### 4.2 Get Your Supabase Credentials
 
-You need an **API key** to authenticate with the backend:
-- See your team lead to get an email with the **API key**
-- Keep this email handy for the next step.
+You need two pieces of information from Supabase:
+1. **Project URL** (looks like `https://xxxxx.supabase.co`)
+2. **Publishable Key** (starts with `sb_publishable_...`)
+
+**Option A - Use Team Credentials (Recommended for Team Members):**
+- Ask your team lead for the shared `.env` file with Supabase credentials
+- Copy the `.env` file to the `Frontend_2025_Scouting` directory
+
+**Option B - Set Up Your Own Supabase Project:**
+- Follow the [SUPABASE_SETUP_GUIDE.md](./SUPABASE_SETUP_GUIDE.md) to create your own Supabase project
+- Get your credentials from the Supabase dashboard (Settings → API Keys)
 
 ### 4.3 Create Your Environment Configuration File
 
-The app needs environment variables to connect to the backend. These are stored in a `.env` file.
+The app needs environment variables to connect to Supabase. These are stored in a `.env` file.
 
-1. **In VS Code, open the project folder**
-2. **Check if a `.env.example` file exists** in the root directory
+1. **In VS Code, open the project folder** (`Frontend_2025_Scouting`)
+2. **Check if you already have a `.env` file** from your team lead
+   - If yes, skip to Step 5
+   - If no, continue to Step 3
+
 3. **Create a `.env` file:**
 
    **Option A - Using VS Code:**
-   - If `.env.example` exists, right-click it and select "Copy"
+   - Right-click `.env.example` and select "Copy"
    - Right-click in the file explorer and select "Paste"
    - Rename the copy from `.env.example copy` to `.env`
-   - If no `.env.example` exists, create a new file named `.env`
 
    **Option B - Using Command Line:**
 
    **Windows (PowerShell):**
    ```powershell
-   # If .env.example exists
    Copy-Item .env.example .env
-
-   # Or create new file
-   New-Item .env -ItemType File
    ```
 
    **Mac:**
    ```bash
-   # If .env.example exists
    cp .env.example .env
-
-   # Or create new file
-   touch .env
    ```
 
-4. **Open the `.env` file and add these variables:**
+4. **Open the `.env` file and add your Supabase credentials:**
 
    ```env
-   # Backend API Configuration
-   EXPO_PUBLIC_API_URL=http://localhost:3000
-   EXPO_PUBLIC_API_KEY=your_589_api_key_here
-
-   # Optional: Production API URL (for testing against production)
-   # EXPO_PUBLIC_API_URL=https://your-production-api.com
+   # Supabase Configuration (Direct Frontend Access)
+   PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
+   PUBLIC_SUPABASE_KEY=sb_publishable_...your_key_here
    ```
 
-   Replace `your_589_api_key_here` with the API key from your email.
+   Replace:
+   - `https://xxxxx.supabase.co` with your actual **Project URL**
+   - `sb_publishable_...your_key_here` with your actual **Publishable Key**
 
 5. **Your `.env` file should look like this:**
 
    ```env
-   # Backend API Configuration
-   EXPO_PUBLIC_API_URL=http://localhost:3000
-   EXPO_PUBLIC_API_KEY=589_[many_random_letters_and_numbers]
+   # Supabase Configuration (Direct Frontend Access)
+   PUBLIC_SUPABASE_URL=https://abcdefghijk.supabase.co
+   PUBLIC_SUPABASE_KEY=sb_publishable_eyJhb...lots_of_characters_here
    ```
 
 6. **Save the file** (`Ctrl+S` on Windows, `Cmd+S` on Mac)
 
-⚠️ **Security Note:** The `.env` file should be in `.gitignore`, so it won't be committed to GitHub. Never share your API key publicly!
+⚠️ **Security Note:** The `.env` file should be in `.gitignore`, so it won't be committed to GitHub. The publishable key is safe to use in the frontend, but never share your service role key!
 
-⚠️ **Important for Physical Device Testing:** When testing on a physical device (iPhone/Android), you'll need to use your computer's local IP address instead of `localhost`. For example:
-```env
-EXPO_PUBLIC_API_URL=http://192.168.1.100:3000
-```
-To find your IP address:
-- **Windows:** Run `ipconfig` in Command Prompt and look for "IPv4 Address"
-- **Mac:** Run `ifconfig | grep "inet "` in Terminal or check System Preferences > Network
+⚠️ **Important:** This `.env` file should be shared with all team members who are developing the app. The publishable key is designed to be used in client-side applications and is protected by Row Level Security (RLS) policies in the database.
 
 ---
 
@@ -449,7 +424,8 @@ This tells npm to use the legacy (npm v6) peer dependency resolution strategy, w
 In the VS Code terminal, run:
 
 ```bash
-npx expo start
+cd Frontend_2025_Scouting  # if not already in the Frontend_2025_Scouting directory
+npm start
 ```
 
 **What's happening?**
@@ -483,13 +459,27 @@ npx expo start
 
 ⚠️ **Important:** Your phone and computer must be on the same WiFi network!
 
+<details>
+<summary>Issue: The application appears to start, but I can't connect my iPhone to run the app</summary>
+
+**Solution:** Try running expo using a network tunnel, which can help solve many common network issues.  
+
+Press Ctrl-C in the terminal window to quit the app, then start over with:
+```bash
+cd Frontend_2025_Scouting  # if not already in the Frontend_2025_Scouting directory
+npm start -- --tunnel
+```
+</details>
+<br>
+
 **Option B - iOS Simulator (Mac Only):**
 1. Press `i` in the terminal
 2. The iOS Simulator will open automatically
 3. The app will load in the simulator
 
 **Option C - Android Emulator:**
-1. Start your Android emulator first (from Android Studio or command line)
+  1. Start your Android emulator first (from [Android
+  Studio](https://developer.android.com/studio) or command line)
 2. Press `a` in the terminal
 3. The app will load in the emulator
 
@@ -517,12 +507,12 @@ npx expo start
 
 **Solution:**
 1. Stop the server (`Ctrl+C`)
-2. Clear the cache: `npx expo start --clear`
+2. Clear the cache: `npm start -- --clear`
 3. If that doesn't work, delete `node_modules` and reinstall:
    ```bash
    rm -rf node_modules
    npm install
-   npx expo start
+   npm start -- --clear  # add '--tunnel' also if needed
    ```
 
 </details>
@@ -533,7 +523,7 @@ npx expo start
 **Solution:**
 - Check that your phone and computer are on the same WiFi network
 - Disable any VPN on your computer or phone
-- Try using Tunnel mode: `npx expo start --tunnel` (slower but works through firewalls)
+- Try using Tunnel mode: `npm start -- --tunnel` (slower but works through firewalls)
 - Make sure your firewall isn't blocking port 8081
 
 </details>
@@ -571,6 +561,7 @@ Once the app loads on your device/simulator:
 1. **Check the Login Screen:**
    - You should see the Team 589 Scouting App login screen
    - The interface should be responsive and look correct
+   - `Sign Up` for an account below the `Sign In` button to get started
 
 2. **Test Basic Navigation:**
    - Try navigating through the app screens
@@ -593,27 +584,24 @@ One of the best features of Expo is hot reload:
 3. **Save the file** (`Ctrl+S` or `Cmd+S`)
 4. **Watch your device/simulator** - the app should automatically reload with your changes!
 
-### 7.3 Connect to the Backend (Optional but Recommended)
+### 7.3 Test Database Connection
 
-To test the full functionality, you need the backend running:
+The app connects directly to Supabase - no separate backend server needed!
 
-1. **Open a new terminal window/tab** (don't close the Expo terminal)
-2. **Navigate to the backend folder:**
-   ```bash
-   cd ../Backend_2025_Scouting
-   ```
-3. **Start the backend server** (see Backend Setup Guide):
-   ```bash
-   npm run dev
-   ```
-4. **Verify backend is running:**
-   - Open http://localhost:3000/health in your browser
-   - You should see a health check response
+1. **Verify your Supabase credentials are correct:**
+   - Check your `.env` file has valid `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_KEY`
 
-5. **Test the connection:**
-   - In the mobile app, try to load data (teams, matches, etc.)
-   - You should see data from the backend
-   - Check the backend terminal for incoming requests
+2. **Test the connection:**
+   - In the mobile app, try to sign up or log in
+   - Try navigating to the leaderboard
+   - If you loaded test data (Step 6 of SUPABASE_SETUP_GUIDE.md), you should see 5 teams
+
+3. **Check for errors:**
+   - If you see connection errors, verify:
+     - Your Supabase project is active (not paused)
+     - The credentials in `.env` match your Supabase project
+     - You're using the publishable key, not the service role key
+     - Your device/computer has internet connection
 
 ### 7.4 View Logs and Debug
 
@@ -730,19 +718,19 @@ You now have the 589 Scouting Frontend running on your device! Here's what you a
 ### Starting and Stopping the App
 
 ```bash
-# Start Expo development server
-npx expo start
+# Start Expo development server from the /589_Scouting_App_2026/Frontend_2025_Scouting directory
+npm start                     
 
 # Start with cache cleared
-npx expo start --clear
+npm start -- --clear
 
 # Start in tunnel mode (works through firewalls)
-npx expo start --tunnel
+npm start -- --tunnel
 
 # Start on specific platform
-npx expo start --ios
-npx expo start --android
-npx expo start --web
+npm start -- --ios
+npm start -- --android
+npm start -- --web
 
 # Stop the server
 # Press Ctrl+C in the terminal
@@ -788,12 +776,12 @@ npm update
 npm outdated
 
 # Clear Expo cache
-npx expo start --clear
+npm start -- --clear
 
 # Reset project completely
 rm -rf node_modules
 npm install
-npx expo start --clear
+npm start -- --clear
 ```
 
 ### Building the App (Advanced)
@@ -817,7 +805,7 @@ eas build --platform android --profile preview
 
 1. **Clear the cache:**
    ```bash
-   npx expo start --clear
+   npm start -- --clear
    ```
 2. **Reinstall dependencies:**
    ```bash
@@ -827,13 +815,13 @@ eas build --platform android --profile preview
 3. **Check for JavaScript errors:** Look in the Expo terminal for error messages
 4. **Check Node.js version:** Run `node --version` (must be 20.0.0 or higher)
 
-### Cannot Connect to Backend
+### Cannot Connect to Supabase
 
-1. **Verify backend is running:** Open http://localhost:3000/health in browser
-2. **Check `.env` file:** Make sure `EXPO_PUBLIC_API_URL` is correct
-3. **Physical device:** Use your computer's IP address instead of `localhost`
-4. **Check API key:** Verify `EXPO_PUBLIC_API_KEY` is set correctly
-5. **Check network:** Phone and computer must be on same WiFi
+1. **Check `.env` file:** Make sure `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_KEY` are correct
+2. **Verify Supabase project is active:** Check your Supabase dashboard - free tier projects pause after inactivity
+3. **Check internet connection:** Both your device and Supabase require internet access
+4. **Verify you're using publishable key:** The key should start with `sb_publishable_`, not `sb_secret_`
+5. **Check Supabase status:** Visit https://status.supabase.com/ to see if there are any outages
 
 ### Slow Performance
 
@@ -845,7 +833,7 @@ eas build --platform android --profile preview
 ### Changes Not Showing Up
 
 1. **Reload the app:** Press `r` in the Expo terminal or shake device and select "Reload"
-2. **Clear cache:** `npx expo start --clear`
+2. **Clear cache:** `npm start -- --clear`
 3. **Check for syntax errors:** Look in terminal for error messages
 4. **Make sure file is saved:** Check for unsaved indicator in VS Code
 
@@ -875,7 +863,7 @@ eas build --platform android --profile preview
 ### Documentation
 
 - **This Guide:** You're reading it! Bookmark it for reference
-- **Backend Setup Guide:** `../Backend_2025_Scouting/docs/BACKEND_SETUP_GUIDE.md`
+- **Supabase Setup Guide:** [SUPABASE_SETUP_GUIDE.md](./SUPABASE_SETUP_GUIDE.md)
 - **Other Docs:** Check the `docs/` folder for additional guides
 
 ### External Resources
@@ -901,9 +889,9 @@ Type `Ctrl+'` / `Cmd+'` to open a terminal in VS Code, type 'claude' at the prom
 ## Important Security Reminders
 
 ⚠️ **Never commit these to GitHub:**
-- `.env` file (contains API keys)
+- `.env` file (contains Supabase credentials)
 - `node_modules` folder (too large, can be regenerated)
-- Any file with passwords or API keys
+- Any file with passwords or service role keys
 - iOS/Android build credentials
 
 ✅ **These should be in `.gitignore`:**
@@ -912,11 +900,11 @@ Type `Ctrl+'` / `Cmd+'` to open a terminal in VS Code, type 'claude' at the prom
 - `.expo/`
 - Build artifacts
 
-🔒 **Keep your API key secret:**
-- Don't share it in chat messages
-- Don't post it in screenshots
-- Don't commit it to GitHub
-- If exposed, contact your team lead to regenerate it
+🔒 **Keep your service role key secret:**
+- The **publishable key** (`sb_publishable_...`) is safe to share with team members - it's designed for client-side use
+- The **service role key** (`sb_secret_...`) should NEVER be used in the frontend or shared
+- Don't post credentials in screenshots or public messages
+- If your service role key is exposed, regenerate it immediately in Supabase dashboard
 
 ---
 
@@ -924,5 +912,6 @@ Type `Ctrl+'` / `Cmd+'` to open a terminal in VS Code, type 'claude' at the prom
 
 ---
 
-*Last Updated: January 2025*
+*Last Updated: 9 Nov 2025*
+<br>
 *Questions or improvements? Open an issue on GitHub or talk to your team lead.*

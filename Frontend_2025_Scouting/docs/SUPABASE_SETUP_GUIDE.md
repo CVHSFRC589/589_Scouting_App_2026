@@ -117,7 +117,7 @@ Once your project is ready, you'll configure the frontend app with your Supabase
 
 ### 2.2 Run the Schema Creation Script
 
-1. **In VS Code**, navigate to `Frontend_2025_Scouting/supabase_setup/CREATE_CLEAN_SCHEMA.sql`
+1. **In VS Code**, navigate to `Frontend_2025_Scouting/supabase_setup/2 - CREATE_CLEAN_SCHEMA.sql`
 2. **Open the file** and select all the contents (`Ctrl+A` on Windows, `Cmd+A` on Mac)
 3. **Copy the entire script** (`Ctrl+C` on Windows, `Cmd+C` on Mac)
 4. **In the Supabase SQL Editor**, paste the script (`Ctrl+V` or `Cmd+V`)
@@ -131,24 +131,30 @@ You should see output showing:
 ```
 Tables created:
 - app_metadata
+- game_scoring_config
 - match_reports
 - pit_reports
 - robot_stats
 - user_profiles
 
 Views created:
-- admin_user_list
-- robots_complete
+- reefscape_matches_view
+- user_team_view
 
 Functions created:
+- assign_default_team
 - check_schema_compatibility
 - create_user_profile
+- get_robot_stats
+- get_team_stats
 - is_user_admin
 - recalculate_team_stats
 - trigger_recalculate_stats
 
 Triggers created:
+- trigger_auto_calculate_match_score (on match_reports)
 - trigger_auto_recalculate_stats (on match_reports)
+- trigger_assign_default_team (on user_profiles)
 ```
 
 If you see errors, check the troubleshooting section at the bottom.
@@ -162,7 +168,7 @@ The auth trigger automatically creates a user profile when someone signs up.
 ### 3.1 Run Auth Trigger Script
 
 1. In the Supabase SQL Editor, click **"New Query"**
-2. **In VS Code**, open `Frontend_2025_Scouting/supabase_setup/CREATE_AUTH_TRIGGER.sql`
+2. **In VS Code**, open `Frontend_2025_Scouting/supabase_setup/3 - CREATE_AUTH_TRIGGER.sql`
 3. **Copy the entire script** (`Ctrl+A` then `Ctrl+C` on Windows, `Cmd+A` then `Cmd+C` on Mac)
 4. **In the Supabase SQL Editor**, paste the script and click **"Run"**
 
@@ -182,17 +188,17 @@ You should see one row showing the `on_auth_user_created` trigger on event_objec
 
 ## Step 4: Initialize App Metadata
 
-### 4.1 Set Initial Configuration
+### 4.1 Run Initial Configuration Script
 
-In the Supabase SQL Editor, run this query to set up your first competition:
+1. In the Supabase SQL Editor, click **"New Query"**
+2. **In VS Code**, open `Frontend_2025_Scouting/supabase_setup/4 - SET_TEST_COMPETITION.sql`
+3. **Copy the entire script** and paste into the Supabase SQL Editor
+4. Click **"Run"**
 
-```sql
-UPDATE app_metadata SET
-    active_competition = 'Test Competition',
-    available_competitions = '["Test Competition"]'::jsonb,
-    schema_version = '1.0.0'
-WHERE id = 1;
-```
+This script sets up:
+- Default competition: 'Test Competition'
+- Schema version: 1.0.0
+- Initializes the app_metadata table
 
 ### 4.2 Verify Configuration
 
@@ -227,7 +233,12 @@ You should see:
 
 ### 5.2 Make Yourself Admin
 
-In the Supabase SQL Editor, run this query (replace `your.email@example.com` with your actual email):
+Option A - Use the SQL script (recommended):
+1. **In VS Code**, open `Frontend_2025_Scouting/supabase_setup/6 - GRANT_ADMIN_ACCESS.sql`
+2. Replace `your.email@example.com` with your actual email address
+3. Copy the script and run it in the Supabase SQL Editor
+
+Option B - Run this query directly in the Supabase SQL Editor (replace `your.email@example.com` with your actual email):
 
 ```sql
 UPDATE user_profiles
@@ -248,10 +259,10 @@ WHERE email = 'your.email@example.com';
 
 To verify everything works, you can load sample data:
 
-1. **In VS Code**, open `Frontend_2025_Scouting/supabase_setup/LOAD_TEST_DATA.sql`
+1. **In VS Code**, open `Frontend_2025_Scouting/supabase_setup/5 - LOAD_TEST_DATA.sql`
 2. **Copy the entire script** (`Ctrl+A` then `Ctrl+C` on Windows, `Cmd+A` then `Cmd+C` on Mac)
 3. **In the Supabase SQL Editor**, paste and run the script
-4. This will create 5 sample teams with match and pit data
+4. This will create 5 sample teams (589, 254, 1678, 118, 971) with match and pit data
 
 ### 6.2 Verify Data Loaded
 
@@ -260,9 +271,10 @@ Check the leaderboard in the app - you should see 5 teams with statistics.
 Or in the Supabase SQL Editor, run this query:
 
 ```sql
-SELECT team_num, matches_played, avg_coral, avg_algae
-FROM robots_complete
-ORDER BY rank_value
+SELECT team_number, matches_played, avg_algae_processed, avg_L1, avg_L2, avg_L3, avg_L4
+FROM robot_stats
+WHERE regional = 'Test Competition'
+ORDER BY total_score DESC
 LIMIT 5;
 ```
 
@@ -273,15 +285,16 @@ LIMIT 5;
 ### Tables
 
 1. **app_metadata** - Application settings and competition configuration
-2. **match_reports** - Match scouting data (auto/tele scoring, climb, etc.)
-3. **pit_reports** - Pit scouting data (robot capabilities)
-4. **robot_stats** - Calculated statistics (auto-updated by trigger)
-5. **user_profiles** - User accounts and permissions
+2. **game_scoring_config** - REEFSCAPE 2025 scoring rules and point values
+3. **match_reports** - Match scouting data (auto/tele scoring, climb, etc.)
+4. **pit_reports** - Pit scouting data (robot capabilities)
+5. **robot_stats** - Calculated statistics (auto-updated by trigger)
+6. **user_profiles** - User accounts and permissions
 
 ### Views
 
-1. **robots_complete** - Leaderboard view (combines stats + pit data)
-2. **admin_user_list** - Admin dashboard (user submission stats)
+1. **reefscape_matches_view** - Formatted match data for display
+2. **user_team_view** - User information with team assignments
 
 ### Key Features
 
@@ -339,10 +352,11 @@ If you need to start completely fresh:
 
 ### Option 1: Drop and Recreate (Quick)
 
-1. **In VS Code**, open `supabase_setup/DROP_ALL_SCHEMA.sql`, copy the contents
+1. **In VS Code**, open `supabase_setup/1 - DROP_ALL_SCHEMA.sql`, copy the contents
 2. **In the Supabase SQL Editor**, paste and run the script
-3. Repeat the process with `CREATE_CLEAN_SCHEMA.sql`
-4. Repeat the process with `CREATE_AUTH_TRIGGER.sql`
+3. Repeat the process with `2 - CREATE_CLEAN_SCHEMA.sql`
+4. Repeat the process with `3 - CREATE_AUTH_TRIGGER.sql`
+5. Repeat the process with `4 - SET_TEST_COMPETITION.sql`
 
 ### Option 2: Create New Project (Safest)
 
@@ -357,7 +371,7 @@ If you need to start completely fresh:
 
 ### ✅ DO:
 - Keep your `.env` file private (it's in `.gitignore`)
-- Use the **anon key** in the frontend (not the service role key)
+- Use the **publishable key** (`sb_publishable_...`) in the frontend (not the service role key)
 - Enable Row Level Security (RLS) on all tables (already done by the setup script)
 - Rotate your database password periodically
 - Give admin privileges only to trusted team members
