@@ -14,9 +14,10 @@ if (Platform.OS === 'android') {
 interface StatsAccordionProps {
   stats: RobotStats;
   title?: string;
+  sortField?: string; // The currently selected sort field
 }
 
-const StatsAccordion: React.FC<StatsAccordionProps> = ({ stats, title = "Robot Statistics" }) => {
+const StatsAccordion: React.FC<StatsAccordionProps> = ({ stats, title = "Robot Statistics", sortField = "Rank" }) => {
   const [expanded, setExpanded] = useState(false);
   const [starred, setStarred] = useState(false);
 
@@ -28,6 +29,34 @@ const StatsAccordion: React.FC<StatsAccordionProps> = ({ stats, title = "Robot S
 
   const formatNumber = (num: number) => {
     return num.toFixed(2);
+  };
+
+  // Get the value to display based on the current sort field (rounded to nearest whole number)
+  const getSortValue = () => {
+    switch (sortField) {
+      case "Rank":
+        return Math.round(stats.rank_value || 0).toString();
+      case "Algae Scored":
+        return Math.round(stats.avg_algae_scored || 0).toString();
+      case "Algae Removed":
+        return Math.round(stats.avg_algae_removed || 0).toString();
+      case "Algae Processed":
+        return Math.round(stats.avg_algae_processed || 0).toString();
+      case "Algae Average":
+        return Math.round(stats.avg_algae || 0).toString();
+      case "Coral L1":
+        return Math.round(stats.avg_L1 || 0).toString();
+      case "Coral L2":
+        return Math.round(stats.avg_L2 || 0).toString();
+      case "Coral L3":
+        return Math.round(stats.avg_L3 || 0).toString();
+      case "Coral L4":
+        return Math.round(stats.avg_L4 || 0).toString();
+      case "Coral Average":
+        return Math.round(stats.avg_coral || 0).toString();
+      default:
+        return Math.round(stats.rank_value || 0).toString();
+    }
   };
 
   const [fontLoaded] = useFonts({
@@ -59,25 +88,30 @@ const StatsAccordion: React.FC<StatsAccordionProps> = ({ stats, title = "Robot S
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-          <Text style={styles.ranktext}>{stats.rank_value}.</Text>
-            <Pressable 
-              onPress={() => router.push(`../(TeamInfo)/(tabs)/RobotDisplay?team=${encodeURIComponent(title)}`)} 
-              style={{ flex: 1 }}
-            >
-              <Text style={styles.headerText}>{title}</Text>
-            </Pressable>
+          {/* Team Number - First */}
+          <Pressable
+            onPress={() => router.push(`../(TeamInfo)/(tabs)/RobotDisplay?team=${encodeURIComponent(title)}`)}
+            style={styles.teamNumberContainer}
+          >
+            <Text style={styles.headerText}>{title}</Text>
+          </Pressable>
 
-          <Pressable onPress={() => setStarred(!starred)}> 
+          {/* Score - Second */}
+          <Text style={styles.scoreText}>{getSortValue()}</Text>
+
+          {/* Star - Third */}
+          <Pressable onPress={() => setStarred(!starred)}>
             <Image
               source={starred ? require('../assets/images/fullStar.png') : require('../assets/images/outlineStar.png')}
               style={styles.star}
             />
           </Pressable>
 
-          <Pressable onPress={() => toggleExpand()}> 
-            <Image 
-              source={require('../assets/images/arrow.png')} 
-              style={[styles.arrow, { transform: [{ rotate: expanded ? '180deg' : '0deg' }] }]} 
+          {/* Expand Arrow - Last */}
+          <Pressable onPress={() => toggleExpand()}>
+            <Image
+              source={require('../assets/images/arrow.png')}
+              style={[styles.arrow, { transform: [{ rotate: expanded ? '180deg' : '0deg' }] }]}
             />
           </Pressable>
         </View>
@@ -120,22 +154,33 @@ const styles = StyleSheet.create({
   headerPressed: {
     opacity: 0.9,
   },
-  star: {
-    width: 35,  
-    height: 35, 
-    marginHorizontal: "3%",
-  },
-  arrow:{
-    width: 35,  
-    height: 35,
-    marginHorizontal: "3%",
+  teamNumberContainer: {
+    flex: 1,
+    marginRight: 12,
   },
   headerText: {
     fontSize: 35,
     fontWeight: '600',
     color: '#000',
     textAlign: "left",
-    flex: 1,
+  },
+  scoreText: {
+    fontSize: 30,
+    color: '#0071bc',
+    fontFamily: 'InterBold',
+    marginRight: 12,
+    minWidth: 50,
+    textAlign: 'right',
+  },
+  star: {
+    width: 35,
+    height: 35,
+    marginHorizontal: 8,
+  },
+  arrow:{
+    width: 35,
+    height: 35,
+    marginHorizontal: 8,
   },
   expandIcon: {
     fontSize: 35,
@@ -176,12 +221,6 @@ const styles = StyleSheet.create({
     backgroundColor:'#0071BC',
     opacity: 0.5,
     alignSelf: 'center',
-  },
-  ranktext:{
-    fontSize: 30,
-    color:'#0071bc',
-    fontFamily: 'InterBold',
-    paddingRight: "5%",
   },
   noDataText: {
     fontSize: 16,

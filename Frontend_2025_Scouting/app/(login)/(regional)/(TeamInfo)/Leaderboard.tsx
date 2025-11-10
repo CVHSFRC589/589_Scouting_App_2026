@@ -1,18 +1,23 @@
 import { Link, router, useRouter } from "expo-router";
-import BackButton from '../../../backButton';
-import React, { useState, useEffect } from "react";
-import { View, Text, Pressable, ScrollView, StyleSheet, Modal, TouchableOpacity, Dimensions, TextInput, Image } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import { View, Text, Pressable, ScrollView, StyleSheet, Modal, TouchableOpacity, Dimensions, TextInput, Image, PanResponder } from "react-native";
 import { robotApiService } from '../../../../data/processing';
 import { useFonts } from 'expo-font';
 
 import LeaderboardView from '../../../../components/RobotLeaderboard';
-import AppCache from "@/data/cache";
+import { ConnectionHeader } from "@/components/ConnectionHeader";
+import { DemoBorderWrapper } from "@/components/DemoBorderWrapper";
+import { useCompetition } from "@/contexts/CompetitionContext";
+import { AppHeader } from "@/components/AppHeader";
+import { AppFooter } from "@/components/AppFooter";
 
 const Leaderboard = () => {
   const router = useRouter();
+  const { activeCompetition } = useCompetition();
   const { width, height } = Dimensions.get('window');
   const [fontLoaded] = useFonts({
     'Koulen': require('../../../../assets/fonts/Koulen-Regular.ttf'),
+    'InterBold': require('../../../../assets/fonts/Inter_18pt-Bold.ttf'),
   });
   const [showLeaderboard, setShowLeaderboard] = useState<boolean>(true); // Show leaderboard by default
   const [showFields, setShowFields] = useState<boolean>(true); // Keep navigation bar visible
@@ -81,34 +86,53 @@ const Leaderboard = () => {
   };
 
   const [sorted, setSorted] = useState<RobotStats[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   // New function to update sorting and fetch sorted robots immediately
   const updateSorting = async (newSortField: string) => {
-    // Update the selected value for the modal
-    setSelectedValue(newSortField);
+    try {
+      setIsLoading(true);
+      setError(null);
 
-    const cache = await AppCache.getData();
-    const regional = cache!.regional;
+      // Update the selected value for the modal
+      setSelectedValue(newSortField);
 
-    // Update the search parameters for the new sort field
-    setSearchParams(prevParams => ({
-      ...prevParams,
-      RANK: newSortField === "Rank", // Reset RANK to true when Rank is selected, or false for others
-      // ALGAE_SCORED: newSortField === "Algae Scored",
-      ALGAE_REMOVED: newSortField === "Algae Removed",
-      ALGAE_PROCESSED: newSortField === "Algae Processed",
-      // ALGAE_AVG: newSortField === "Algae Average",
-      CORAL_L1: newSortField === "Coral L1",
-      CORAL_L2: newSortField === "Coral L2",
-      CORAL_L3: newSortField === "Coral L3",
-      CORAL_L4: newSortField === "Coral L4",
-      // CORAL_AVG: newSortField === "Coral Average",
-    }));
+      const competition = activeCompetition || 'Test Competition'; // Use active competition from database
 
-    // Fetch the sorted robots with the updated search params immediately after selection
-    const sortedRobots = await robotApiService.getSortedRobots(searchParams, regional);
-    setSorted(sortedRobots);
-    setFiltered(sortedRobots);
+      console.log('🔍 Leaderboard - Fetching data for competition:', competition);
+      console.log('🔍 Leaderboard - Sort field:', newSortField);
+
+      // Build the new search parameters for the sort field
+      const newSearchParams: SortFieldParams = {
+        RANK: newSortField === "Rank",
+        ALGAE_SCORED: newSortField === "Algae Scored",
+        ALGAE_REMOVED: newSortField === "Algae Removed",
+        ALGAE_PROCESSED: newSortField === "Algae Processed",
+        ALGAE_AVG: newSortField === "Algae Average",
+        CORAL_L1: newSortField === "Coral L1",
+        CORAL_L2: newSortField === "Coral L2",
+        CORAL_L3: newSortField === "Coral L3",
+        CORAL_L4: newSortField === "Coral L4",
+        CORAL_AVG: newSortField === "Coral Average",
+      };
+
+      // Update state with new search params
+      setSearchParams(newSearchParams);
+
+      // Fetch the sorted robots with the NEW search params
+      const sortedRobots = await robotApiService.getSortedRobots(newSearchParams, competition);
+      console.log('🔍 Leaderboard - Fetched robots:', sortedRobots.length, 'teams');
+      console.log('🔍 Leaderboard - Demo mode:', robotApiService.isDemoMode);
+
+      setSorted(sortedRobots);
+      setFiltered(sortedRobots);
+    } catch (err) {
+      console.error('❌ Leaderboard - Error fetching data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load leaderboard data');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // UseEffect to trigger sorting when the component mounts
@@ -124,10 +148,61 @@ const Leaderboard = () => {
     setFiltered(filteredSorted);
   }, [searchQuery])
 
+  // Swipe gesture handler for back navigation
+  const swipeGesture = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        // Only respond to primarily horizontal gestures
+        // Require horizontal movement to be 3x greater than vertical
+        const isHorizontal = Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 3;
+        const hasSignificantMovement = Math.abs(gestureState.dx) > 30;
+        return isHorizontal && hasSignificantMovement;
+      },
+      onPanResponderTerminationRequest: () => false,
+      onPanResponderRelease: (evt, gestureState) => {
+        const screenWidth = Dimensions.get('window').width;
+        const swipeThreshold = screenWidth * 0.125; // 1/8 of screen width
+        const velocityThreshold = 0.5; // Minimum velocity for quick swipes
+
+        // Check if swipe distance OR velocity exceeds threshold
+        const shouldNavigateBack = gestureState.dx > swipeThreshold ||
+                                   (gestureState.dx > 50 && gestureState.vx > velocityThreshold);
+
+        // Swipe right - go back to home
+        if (shouldNavigateBack) {
+          setImmediate(() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace('/(login)/home');
+            }
+          });
+        }
+      },
+    })
+  ).current;
+
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <BackButton buttonName="Home Page" />
-      <Text style={styles.title}>Leaderboard</Text>
+    <DemoBorderWrapper>
+      <AppHeader />
+      <ScrollView contentContainerStyle={styles.container}>
+        <View {...swipeGesture.panHandlers}>
+        <View style={styles.titleContainer}>
+          <Pressable
+            style={styles.backButtonOverride}
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace('/(login)/home');
+              }
+            }}
+          >
+            <Image style={styles.backButtonIcon} source={require('../../../../assets/images/back_arrow.png')} />
+          </Pressable>
+          <Text style={styles.title}>Leaderboard</Text>
+        </View>
 
       {showFields && (
         <>
@@ -196,22 +271,56 @@ const Leaderboard = () => {
         </>
       )}
 
-      <LeaderboardView sortedStats={filtered} showLeaderboard={showLeaderboard} />
+      <LeaderboardView
+        sortedStats={filtered}
+        showLeaderboard={showLeaderboard}
+        isLoading={isLoading}
+        error={error}
+        sortField={selectedValue || "Rank"}
+      />
+      </View>
     </ScrollView>
+    <AppFooter />
+    </DemoBorderWrapper>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'flex-start',
     padding: 25,
+    backgroundColor: '#E6F4FF',
+  },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    width: '100%',
+    marginTop: 0,
+    marginBottom: 5,
+    paddingTop: 0,
+    paddingBottom: 0,
+    gap: 15,
+  },
+  backButtonOverride: {
+    width: 20,
+    height: 20,
+    margin: 0,
+    padding: 0,
+  },
+  backButtonIcon: {
+    width: 20,
+    height: 20,
   },
   title: {
-    fontFamily: 'Koulen',
-    fontSize: 40,
-    marginBottom: 0,
+    fontFamily: 'InterBold',
+    fontSize: 30,
+    margin: 0,
+    padding: 0,
+    lineHeight: 30,
     textAlign: 'left',
+    color: '#0071BC',
   },
   buttonOne: {
     marginTop: 0,

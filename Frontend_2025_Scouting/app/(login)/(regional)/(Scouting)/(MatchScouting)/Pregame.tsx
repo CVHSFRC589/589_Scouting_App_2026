@@ -1,11 +1,16 @@
 import { Link, router, useLocalSearchParams, useRouter } from "expo-router";
 import BackButton from '../../../../backButton';
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, StyleSheet, Animated, PanResponder, Pressable, TouchableOpacity, TextInput, FlatList, Dimensions, ScrollView, KeyboardAvoidingView, Platform, Image } from "react-native";
+import { View, Text, StyleSheet, Animated, PanResponder, Pressable, TouchableOpacity, TextInput, FlatList, Dimensions, ScrollView, KeyboardAvoidingView, Platform, Image, Alert } from "react-native";
 import { useFonts } from 'expo-font';
 import ProgressBar from '../../../../../components/ProgressBar'
 import { robotApiService, getDemoMode } from "@/data/processing";
+import { matchDataCache } from "@/data/matchDataCache";
 import { error } from "console";
+import { AppHeader } from "@/components/AppHeader";
+import { AppFooter } from "@/components/AppFooter";
+import { DemoBorderWrapper } from "@/components/DemoBorderWrapper";
+import { useCompetition } from "@/contexts/CompetitionContext";
 
 
 // var selectedTeamConst: number | null = null;
@@ -15,7 +20,7 @@ import { error } from "console";
 
 const Pregame = () => {
     const router = useRouter();
-    const regionalOptions = ['Hueneme', 'Ventura', 'East Bay', 'Orange County']
+    const { activeCompetition, availableCompetitions } = useCompetition();
     const { returned } = useLocalSearchParams<{ returned: string }> ();
     // const options = ['1', '2', '3', '4', '5', 'Can add more in code']; // MUST ONLY BE NUMBERS, OR BAD STUFF HAPPENS
     // const secondOptions = ['1', '2', '3', 'Can add more in code']; // Still must only be numbers
@@ -24,12 +29,8 @@ const Pregame = () => {
 
     const pan = useRef(new Animated.Value(0)).current;
 
-    //robot dropdown functions
-    const [isDropdownVisible, setDropdownVisible] = useState(false);
+    // Team number - direct input, no dropdown needed
     const [selectedTeam, setSelectedTeam] = useState<number | null>(null);
-    const [searchQuery, setSearchQuery] = useState<string>('');
-    const [robots, setRobots] = useState<Robot[]>([]);
-    const [filteredTeams, setFilteredTeams] = useState<RobotOption[] | null>(null);
 
     //match dropdown functions
     const [isSecondDropdownVisible, setSecondDropdownVisible] = useState(false);
@@ -38,10 +39,8 @@ const Pregame = () => {
     const [matches, setMatches] = useState<TeamMatchBase[] | null>(null);
     const [displayedMatches, setFilteredMatches] = useState<Match[] | null>(null);
 
-    const [isRegionalDropdownVisible, setRegionalDropdownVisible] = useState(false);
-    const [selectedRegionalValue, setSelectedRegionalValue] = useState<string | null>(null);
-    const [searchRegionalQuery, setSearchRegionalQuery] = useState<string>('');
-    const [filteredRegionalOptions, setFilteredRegionalOptions] = useState(regionalOptions);
+    // Competition is now static and set by admin - no dropdown needed
+    const selectedRegionalValue = activeCompetition;
     
     const [auto_starting_position, setAutoStartingPosition] = useState<number>(0);
 
@@ -49,83 +48,25 @@ const Pregame = () => {
 
     // const [matchNumber, setMatchNumber] = useState<number | null>(null);
 
-    interface RobotOption {
-        value: string;
-        label: string;
-    }
-
     interface Match {
         match_num: number;
     }
-    
-    // Team Number Dropdown functions
-    const toggleTeamDropdown = async () => {
-        let formatted_regional = ''
-        if (selectedRegionalValue == null) {
-            alert("Please select a regional first")
-            return
-        }
-        else if (selectedRegionalValue == "Orange County") {
-            formatted_regional = 'oc'
-        }
-        else if (selectedRegionalValue == "East Bay") {
-            formatted_regional = 'be'
-        }
-        else if (selectedRegionalValue == "Ventura") {
-            formatted_regional = 've'
-        }
-        else if (selectedRegionalValue == "Hueneme") {
-            //check if hueneme regional key is "port hueneme -> ph" or "hueneme -> hu"
-            formatted_regional = 'ph'
-        }
-        
-        setDropdownVisible(!isDropdownVisible);
-        setSearchQuery('');
-        await fetchRobots(formatted_regional!);
-    };
 
-    const handleTeamSelect = (value: number) => {
-        // selectedTeamConst = value;
-        setSelectedTeam(value);
-        setDropdownVisible(false);
-    };
-
-    const handleTeamSearch = (query: string) => {
-        setSearchQuery(query);
-        if (query.trim() === '') {
-            setFilteredTeams(filteredRobots);
-        } else {
-            const filtered = filteredRobots.filter((option) =>
-                option.label.toLowerCase().includes(query.toLowerCase())
-            );
-            setFilteredTeams(filtered);
-        }
-    };
+    // Team number is now direct input - no dropdown or interfaces needed
 
     // Dropdown 2 functions
     const toggleMatchDropdown = async () => {
-        let formatted_regional = ''
         if (selectedRegionalValue == null) {
-            alert("Please select a regional first")
+            alert("Please select a competition first")
             return
         }
-        else if (selectedRegionalValue == "Orange County") {
-            formatted_regional = 'oc'
-        }
-        else if (selectedRegionalValue == "East Bay") {
-            formatted_regional = 'be'
-        }
-        else if (selectedRegionalValue == "Ventura") {
-            formatted_regional = 've'
-        }
-        else if (selectedRegionalValue == "Hueneme") {
-            //check if hueneme regional key is "port hueneme -> ph" or "hueneme -> hu"
-            formatted_regional = 'ph'
-        }
+
+        // Use active competition from database
+        const formatted_regional = activeCompetition || 'Test Competition';
 
         setSecondDropdownVisible(!isSecondDropdownVisible);
         setSearchSecondQuery('');
-        
+
         await fetchRemainingMatches(formatted_regional, selectedTeam!);
     };
 
@@ -143,6 +84,7 @@ const Pregame = () => {
         setIsDemoMode(getDemoMode());
     }, []);
 
+    // Competition is set by admin - no need for sync or dropdown functions
     // const handleMatchSearch = (query: string) => {
     //     setSearchSecondQuery(query);
     //     if (query.trim() === '') {
@@ -154,34 +96,6 @@ const Pregame = () => {
     //         setFilteredMatches(filtered);
     //     }
     // };
-
-    // Dropdown 3 functions (regional)
-    const toggleRegionalDropdown = () => {
-        setRegionalDropdownVisible(!isRegionalDropdownVisible);
-        setSearchRegionalQuery('');
-        setFilteredRegionalOptions(regionalOptions);
-        // if(selectedRegionalValue != null)
-            // setDropdownSelected(true);
-    };
-
-    const handleRegionalSelect = (value: string) => {
-        // selectedRegionalConst = value;
-        setSelectedRegionalValue(value);
-        setRegionalDropdownVisible(false);
-        // setDropdownSelected(true);
-    };
-
-    const handleRegionalSearch = (query: string) => {
-        setSearchRegionalQuery(query);
-        if (query.trim() === '') {
-            setFilteredRegionalOptions(regionalOptions);
-        } else {
-            const filtered = regionalOptions.filter((option) =>
-                option.toLowerCase().includes(query.toLowerCase())
-            );
-            setFilteredRegionalOptions(filtered);
-        }
-    };
 
     const valueRef = useRef(50);
     const min = 0;
@@ -274,43 +188,7 @@ const Pregame = () => {
         });
     };
 
-    const [loading, setLoading] = useState<boolean>(false);
-    const [error, setError] = useState<string | null>(null);
-
-    const fetchRobots = async (regional: string): Promise<void> => {
-        setLoading(true);
-        setError(null);
-        try {
-            const robotData = await robotApiService.getAllRobots(regional);
-            setRobots(robotData);
-        } catch (err) {
-            setError('Failed to fetch robot data');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const fetchRemainingMatches = async (regional: string, team_num: number): Promise<void> => {
-        setLoading(true);
-        setError(null);
-        try {
-            const matches = await robotApiService.fetchTeamRemainingMatches(regional, team_num);
-            setMatches(matches);
-        } catch (err) {
-            setError('Failed to fetch robot data');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const filteredRobots: RobotOption[] = robots
-    .filter(robot => 
-        robot.team_num.toString().includes(searchQuery.toLowerCase())
-    )
-    .map(robot => ({
-        value: robot.team_num.toString(),
-        label: `Team ${robot.team_num}`
-    }));
+    // Team input is now direct entry - no need to fetch robots from database
 
     // const filteredMatches: Match[] = matches!
     // .filter(match => 
@@ -333,152 +211,110 @@ const Pregame = () => {
     //     }
     // }, []);
 
-    // Swipe gesture handler for demo mode
+    // Swipe gesture handler
     const swipeGesture = useRef(
         PanResponder.create({
+            onStartShouldSetPanResponder: () => false,
             onMoveShouldSetPanResponder: (evt, gestureState) => {
-                // Only activate for horizontal swipes
-                return isDemoMode && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 50;
+                // Only respond to primarily horizontal gestures
+                // Require horizontal movement to be 3x greater than vertical
+                const isHorizontal = Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 3;
+                const hasSignificantMovement = Math.abs(gestureState.dx) > 30;
+                return isHorizontal && hasSignificantMovement;
             },
+            onPanResponderTerminationRequest: () => false,
             onPanResponderRelease: (evt, gestureState) => {
-                if (!isDemoMode) return;
+                const screenWidth = Dimensions.get('window').width;
+                const swipeThreshold = screenWidth * 0.125; // 1/8 of screen width
+                const velocityThreshold = 0.5; // Minimum velocity for quick swipes
 
-                // Swipe right - go to home (back)
-                if (gestureState.dx > 100) {
-                    router.push("/(login)/home");
+                // Check if swipe distance OR velocity exceeds threshold
+                const shouldNavigateRight = gestureState.dx > swipeThreshold ||
+                                           (gestureState.dx > 50 && gestureState.vx > velocityThreshold);
+                const shouldNavigateLeft = gestureState.dx < -swipeThreshold ||
+                                          (gestureState.dx < -50 && gestureState.vx < -velocityThreshold);
+
+                // Swipe right - go to home (use back to animate from left)
+                if (shouldNavigateRight) {
+                    setImmediate(() => router.back());
                 }
-                // Swipe left - go to next screen
-                else if (gestureState.dx < -100) {
-                    const demoTeam = selectedTeam || 589;
-                    const demoMatch = selectedMatch || 1;
-                    const demoRegional = selectedRegionalValue ?
-                        (selectedRegionalValue == "Hueneme" ? "ph" :
-                         selectedRegionalValue == "Ventura" ? "ve" :
-                         selectedRegionalValue == "East Bay" ? "be" :
-                         selectedRegionalValue == "Orange County" ? "oc" : "ph") : "ph";
-                    router.push(`./Auto?team=${demoTeam}&regional=${demoRegional}&match=${demoMatch}`);
+                // Swipe left - go to next screen (Auto, push to animate from right)
+                else if (shouldNavigateLeft) {
+                    const team = selectedTeam || 589;
+                    const match = selectedMatch || 1;
+                    const regional = activeCompetition || 'Test Competition';
+                    setImmediate(() => router.push(`./Auto?team=${team}&regional=${regional}&match=${match}`));
                 }
             },
         })
     ).current;
 
     return (
+        <DemoBorderWrapper>
+        <AppHeader />
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={{ flex: 1 }}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+        <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 80 }}>
         <View style={styles.container} {...swipeGesture.panHandlers}>
             <View style={styles.navigationRow}>
-                <BackButton buttonName="Home Page" />
-                {isDemoMode && (
-                    <Pressable
-                        style={styles.forwardButton}
-                        onPress={() => {
-                            // Use placeholder data for demo mode navigation
-                            const demoTeam = selectedTeam || 589;
-                            const demoMatch = selectedMatch || 1;
-                            const demoRegional = selectedRegionalValue ?
-                                (selectedRegionalValue == "Hueneme" ? "ph" :
-                                 selectedRegionalValue == "Ventura" ? "ve" :
-                                 selectedRegionalValue == "East Bay" ? "be" :
-                                 selectedRegionalValue == "Orange County" ? "oc" : "ph") : "ph";
+                <Pressable
+                    style={styles.backButton}
+                    onPress={() => router.push("/(login)/home")}
+                >
+                    <Image style={styles.backButtonIcon} source={require('./../../../../../assets/images/back_arrow.png')} />
+                </Pressable>
+                <Pressable
+                    style={styles.forwardButton}
+                    onPress={() => {
+                        // Navigate to Auto with current data
+                        const team = selectedTeam || 589;
+                        const match = selectedMatch || 1;
+                        const regional = activeCompetition || 'Test Competition';
 
-                            router.push(`./Auto?team=${demoTeam}&regional=${demoRegional}&match=${demoMatch}`);
-                        }}
-                    >
-                        <Image style={styles.forwardButtonIcon} source={require('./../../../../../assets/images/back_arrow.png')} />
-                    </Pressable>
-                )}
+                        router.push(`./Auto?team=${team}&regional=${regional}&match=${match}`);
+                    }}
+                >
+                    <Image style={styles.forwardButtonIcon} source={require('./../../../../../assets/images/back_arrow.png')} />
+                </Pressable>
             </View>
             <ProgressBar currentStep="Pre" />
 
             <Text style={styles.title}>Pregame</Text>
 
-            <Text style={styles.Smallsubtitle}>Regional</Text>
+            <Text style={styles.Smallsubtitle}>Competition</Text>
 
-            {/* Dropdown 2 */}
-            <TouchableOpacity style={styles.dropdownButton} onPress={toggleRegionalDropdown}>
-                <View style={styles.dropdownContent}>
-                    <Text style={styles.dropdownButtonText}>
-                        {selectedRegionalValue || 'Select Regional'}
-                    </Text>
-                    <Text style={styles.dropdownArrow}>
-                        {isRegionalDropdownVisible ? '∧' : '∨'}
-                    </Text>
-                </View>
+            {/* Static Competition Label with Tooltip */}
+            <TouchableOpacity
+                style={styles.staticCompetitionContainer}
+                onPress={() => {
+                    Alert.alert(
+                        'Competition Locked',
+                        'The competition can only be set by an administrator. Contact team lead if this needs to be changed.',
+                        [{ text: 'OK', style: 'default' }]
+                    );
+                }}
+            >
+                <Text style={styles.staticCompetitionText}>
+                    {activeCompetition || 'No competition set'}
+                </Text>
             </TouchableOpacity>
-
-            {isRegionalDropdownVisible && (
-                <View style={styles.dropdownContainer}>
-                    <TextInput
-                        style={styles.searchInput}
-                        placeholder="Search..."
-                        value={searchRegionalQuery}
-                        onChangeText={handleRegionalSearch}
-                    />
-
-                    <FlatList
-                        data={filteredRegionalOptions}
-                        keyExtractor={(item, index) => index.toString()}
-                        renderItem={({ item }) => (
-                            <TouchableOpacity
-                                style={styles.option}
-                                onPress={() => handleRegionalSelect(item)}
-                            >
-                                <Text style={styles.optionText}>{item}</Text>
-                            </TouchableOpacity>
-                        )}
-                        ListEmptyComponent={() => (
-                            <Text style={styles.noResultsText}>No results found</Text>
-                        )}
-                    />
-                </View>
-            )}
 
             <Text style={styles.Smallsubtitle}>Team</Text>
 
-            { /* Team Number Dropdown */ }
-            <TouchableOpacity style={styles.dropdownButton} onPress={toggleTeamDropdown}>
-                <View style={styles.dropdownContent}>
-                    <Text style={styles.dropdownButtonText}>
-                        {selectedTeam || 'Select Team Number'}
-                    </Text>
-                    <Text style={styles.dropdownArrow}>
-                        {isDropdownVisible ? '∧' : '∨'}
-                    </Text>
-                </View>
-            </TouchableOpacity>
-
-            {isDropdownVisible &&(
-                <View style={styles.dropdownContainer}>
-                    <TextInput
-                        style={styles.searchInput}
-                        placeholder="Search..."
-                        value={searchQuery}
-                        onChangeText={handleTeamSearch}
-                    />
-
-                    <FlatList
-                        data={filteredRobots}
-                        keyExtractor={(item: RobotOption) => item.value}
-                        renderItem={({ item }: { item: RobotOption }) => (
-                            <TouchableOpacity
-                                style={styles.option}
-                                onPress={() => {
-                                    handleTeamSelect(Number(item.value))
-                                }}
-                            >
-                                <Text style={styles.optionText}>{item.label}</Text>
-                            </TouchableOpacity>
-                        )}
-                        ListEmptyComponent={() => (
-                            <Text style={styles.noResultsText}>No results found</Text>
-                        )}
-                    />
-                </View>
-            )}
+            { /* Team Number Input */ }
+            <TextInput
+                style={styles.dropdownButton}
+                placeholder="Team Number"
+                value={selectedTeam?.toString() || ''}
+                onChangeText={(text: string) => {
+                    const teamNum = text ? Number(text) : null;
+                    setSelectedTeam(teamNum);
+                }}
+                keyboardType="number-pad"
+            />
             <Text style={styles.Smallsubtitle}>Match</Text>
             <TextInput
                         style={styles.dropdownButton}
@@ -558,21 +394,14 @@ const Pregame = () => {
         </View>
         </ScrollView>
         </KeyboardAvoidingView>
+        <AppFooter />
+        </DemoBorderWrapper>
     );
 };
 
 async function nextButton(regional: string | null, team_num: number | null, match_num: number | null, auto_starting_position: number | null, secondTimeThru: boolean) {
-    let formatted_regional = ""
-    if (regional == "Hueneme") {
-        formatted_regional = "ph"
-    }
-    else if (regional == "Ventura") {
-        formatted_regional = "ve"
-    }
-    else if (regional == "East Bay") {
-        formatted_regional = "be"
-    }
-    // Selected values logged for debugging
+    // Regional is passed in as parameter from component
+    const formatted_regional = regional || 'Test Competition';
 
     if (team_num == null || match_num == null || regional == null) {
         alert("Please fill out all fields")
@@ -581,30 +410,22 @@ async function nextButton(regional: string | null, team_num: number | null, matc
         let teamMatch: TeamMatchPregame = {
             team_num: team_num!,
             match_num: match_num!,
-            regional: formatted_regional!,
+            regional: formatted_regional,
             auto_starting_position: auto_starting_position!
         }
 
-        // Sending data to server
-
-        // if (!secondTimeThru) {
+        // Save pregame data to local cache (not submitting to server yet)
         try {
-            await robotApiService.sendPregameData(teamMatch)
+            await matchDataCache.savePregameData(teamMatch);
+            console.log('📝 Pregame data saved to cache');
+        } catch (err) {
+            console.error('Error saving pregame data to cache:', err);
         }
-        catch (err) {
-            if(err instanceof Error) {
-                if(err.message.includes("JSON Parse error")) {
-                    router.push(`./Auto?team=${team_num.toString()}&regional=${formatted_regional}&match=${match_num.toString()}`);
-                }
-            }
-            else {
-                // Error sending pregame data
-            }
-        }
-        // }
-        router.push(`./Auto?team=${team_num.toString()}&regional=${formatted_regional}&match=${match_num.toString()}`); 
+
+        // Navigate to Auto page
+        router.push(`./Auto?team=${team_num.toString()}&regional=${formatted_regional}&match=${match_num.toString()}`);
     }
-    
+
 }
 
 const styles = StyleSheet.create({
@@ -612,12 +433,25 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'flex-start',
         padding: 25,
+        backgroundColor: '#E6F4FF',
     },
     navigationRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         width: '100%',
+    },
+    backButton: {
+        borderRadius: 4,
+        borderColor: 'white',
+        width: 20,
+        height: 20,
+        marginBottom: 15,
+        marginTop: 25,
+    },
+    backButtonIcon: {
+        width: 20,
+        height: 20,
     },
     forwardButton: {
         borderRadius: 4,
@@ -690,6 +524,22 @@ const styles = StyleSheet.create({
         fontSize: 16,
         textAlign: "center",
         color: "#0071BC",
+    },
+    staticCompetitionContainer: {
+        height: 45,
+        width: '100%',
+        justifyContent: 'center',
+        marginBottom: 15,
+        borderWidth: 1,
+        borderColor: '#0071BC',
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        backgroundColor: '#E6F4FF',
+    },
+    staticCompetitionText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#4A4A4A',
     },
     dropdownButton: {
         height: 45,

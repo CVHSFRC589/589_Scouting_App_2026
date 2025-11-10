@@ -2,17 +2,17 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface CacheData {
   teamNumber: number;
-  regional: string;
+  competition: string;
 }
 
 class AppCache {
   private static readonly CACHE_KEY = 'app_cache_data';
 
-  static async saveData(teamNumber: number, regional: string): Promise<void> {
+  static async saveData(teamNumber: number, competition: string): Promise<void> {
     try {
       const data: CacheData = {
         teamNumber,
-        regional,
+        competition,
       };
       await AsyncStorage.setItem(this.CACHE_KEY, JSON.stringify(data));
     } catch (error) {
@@ -46,19 +46,19 @@ class AppCache {
   static async updateTeamNumber(teamNumber: number): Promise<void> {
     try {
       const currentData = await this.getData();
-      await this.saveData(teamNumber, currentData?.regional || '');
+      await this.saveData(teamNumber, currentData?.competition || '');
     } catch (error) {
       console.error('Error updating team number:', error);
       throw error;
     }
   }
 
-  static async updateRegional(regional: string): Promise<void> {
+  static async updateCompetition(competition: string): Promise<void> {
     try {
       const currentData = await this.getData();
-      await this.saveData(currentData?.teamNumber || 0, regional);
+      await this.saveData(currentData?.teamNumber || 0, competition);
     } catch (error) {
-      console.error('Error updating regional:', error);
+      console.error('Error updating competition:', error);
       throw error;
     }
   }

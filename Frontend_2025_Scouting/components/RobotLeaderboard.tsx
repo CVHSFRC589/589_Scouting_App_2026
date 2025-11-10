@@ -7,13 +7,15 @@ interface LeaderboardProps {
   showLeaderboard: boolean;
   isLoading?: boolean;
   error?: string;
+  sortField?: string; // The currently selected sort field
 }
 
 const LeaderboardView: React.FC<LeaderboardProps> = ({
   sortedStats,
   showLeaderboard,
   isLoading = false,
-  error
+  error,
+  sortField = "Rank"
 }) => {
   // If not meant to be shown, return null
   if (!showLeaderboard) {
@@ -54,7 +56,7 @@ const LeaderboardView: React.FC<LeaderboardProps> = ({
       <ScrollView style={styles.scrollView}>
         {sortedStats.map((robotStat, index) => (
           <View key={index} style={styles.rankContainer}>
-            
+
             <View style={styles.accordionContainer}>
             {/* <View style={styles.rankBadge}> */}
               {/* <Text style={styles.rankText}>#{index + 1}</Text> */}
@@ -62,6 +64,7 @@ const LeaderboardView: React.FC<LeaderboardProps> = ({
               <StatsAccordion
                 stats={robotStat}
                 title={` ${robotStat.team_num}`}
+                sortField={sortField}
               />
             </View>
           </View>

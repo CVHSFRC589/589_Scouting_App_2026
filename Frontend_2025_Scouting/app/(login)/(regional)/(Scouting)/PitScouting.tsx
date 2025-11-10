@@ -6,9 +6,16 @@ import { useFonts } from "expo-font";
 import { robotApiService, getDemoMode } from "@/data/processing";
 import AppCache from "@/data/cache";
 import { Ionicons } from '@expo/vector-icons';
+import { AppHeader } from "@/components/AppHeader";
+import { AppFooter } from "@/components/AppFooter";
+import { DemoBorderWrapper } from "@/components/DemoBorderWrapper";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCompetition } from "@/contexts/CompetitionContext";
 // import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 
 const PitScouting = () => {
+    const { userProfile } = useAuth();
+    const { activeCompetition } = useCompetition();
 
     // const [facing, setFacing] = useState<CameraType>('back');
     // const [permission, requestPermission] = useCameraPermissions();
@@ -45,7 +52,8 @@ const PitScouting = () => {
     //form data
     const [team, setTeam] = useState<string>("")
     const [useNumberPad, setUseNumberPad] = useState<boolean>(true)
-    const [regional, setRegional] = useState<string>("")
+    // Regional comes from active competition in database
+    const [regional, setRegional] = useState<string>(activeCompetition || "")
     const [vision, setVision] = useState<string>("")
     const [isVisionDropdownVisible, setVisionDropdownVisible] = useState<boolean>(false)
     const [driveTrain, setDriveTrain] = useState<string>("")
@@ -65,15 +73,12 @@ const PitScouting = () => {
     const [climb_deep, set_climb_deep] = useState<boolean>(false)
     const [climb_shallow, set_climb_shallow] = useState<boolean>(false)
 
+    // Update regional when activeCompetition changes
     useEffect(() => {
-        const getRegional = async () => {
-            let cache = await AppCache.getData();
-            setRegional(cache!.regional);
-    
-            
+        if (activeCompetition) {
+            setRegional(activeCompetition);
         }
-        getRegional();
-    }, []);
+    }, [activeCompetition]);
 
 //     if (!permission) {
 //         return <View />;
@@ -121,22 +126,17 @@ if(!fontLoaded){
   
     return (
         //Backend robot pit scouting schema + table needs alteration to match this better.
+        <DemoBorderWrapper>
+        <AppHeader />
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={{ flex: 1 }}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+        <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 80 }}>
         <View style={styles.container}>
         <BackButton buttonName="Home Page" />
-            <View style={styles.titleContainer}>
-                <Text style={styles.title}>Pit Scouting</Text>
-                {getDemoMode() && (
-                    <View style={styles.connectionIndicator}>
-                        <Ionicons name="server-outline" size={16} color="#FFFFFF" />
-                    </View>
-                )}
-            </View>
+        <Text style={styles.title}>Pit Scouting</Text>
 
             <View style={styles.teamInputContainer}>
                 <Text style={styles.Smallsubtitle}>Team</Text>
@@ -420,10 +420,14 @@ if(!fontLoaded){
                     }
 
                     try {
-                        await robotApiService.updatePitData(team_num, pitData)
+                        const result = await robotApiService.updatePitData(team_num, pitData, userProfile?.id);
+                        const isDemoMode = getDemoMode();
+
                         Alert.alert(
                             'Data Submitted',
-                            `Pit scouting data for Team ${team_num} has been submitted successfully!\n\nNote: Running in demo mode.`,
+                            isDemoMode
+                                ? `Pit scouting data for Team ${team_num} has been submitted successfully!\n\nNote: Running in demo mode - data not saved to database.`
+                                : `Pit scouting data for Team ${team_num} has been submitted successfully!`,
                             [
                                 {
                                     text: 'OK',
@@ -432,14 +436,13 @@ if(!fontLoaded){
                             ]
                         );
                     } catch (error) {
-                        // Demo mode - show success message even if backend unavailable
+                        // Error - show message
                         Alert.alert(
-                            'Data Saved',
-                            `Pit scouting data for Team ${team_num} has been recorded.\n\nNote: Running in demo mode.`,
+                            'Error',
+                            `Failed to save pit scouting data for Team ${team_num}.\n\nError: ${error}`,
                             [
                                 {
-                                    text: 'OK',
-                                    onPress: () => router.push("/(login)/home")
+                                    text: 'OK'
                                 }
                             ]
                         );
@@ -450,6 +453,8 @@ if(!fontLoaded){
         </View>
         </ScrollView>
         </KeyboardAvoidingView>
+        <AppFooter />
+        </DemoBorderWrapper>
     );
 };
 
@@ -458,6 +463,7 @@ const styles = StyleSheet.create({
         flex: 1, // Makes sure the container takes up the whole screen
         justifyContent: 'flex-start', // Centers content to the top of the page
         padding: 25, // Optional: Adds padding to the container
+        backgroundColor: '#E6F4FF',
     },
 
     group: {
@@ -469,8 +475,10 @@ const styles = StyleSheet.create({
     titleContainer: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'space-between',
         position: 'relative',
         marginBottom: -10,
+        width: '100%',
     },
 
     title:{

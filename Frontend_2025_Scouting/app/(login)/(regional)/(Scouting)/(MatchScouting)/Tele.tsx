@@ -1,9 +1,13 @@
 import { Link, router, useGlobalSearchParams, useRouter } from "expo-router";
 import BackButton from '../../../../backButton';
 import React, { useState, useRef, useEffect } from "react";
-import { View, Text, Pressable, StyleSheet, Image, ScrollView, Modal, PanResponder } from "react-native";
+import { View, Text, Pressable, StyleSheet, Image, ScrollView, Modal, PanResponder, Dimensions } from "react-native";
 import { robotApiService, getDemoMode } from "@/data/processing";
+import { matchDataCache } from "@/data/matchDataCache";
 import ProgressBar from '../../../../../components/ProgressBar'
+import { AppHeader } from "@/components/AppHeader";
+import { AppFooter } from "@/components/AppFooter";
+import { DemoBorderWrapper } from "@/components/DemoBorderWrapper";
 
 
 const Tele = () => {
@@ -155,54 +159,73 @@ const Tele = () => {
         setIsDemoMode(getDemoMode());
     }, []);
 
-    // Swipe gesture handler for demo mode
+    // Swipe gesture handler
     const swipeGesture = useRef(
         PanResponder.create({
+            onStartShouldSetPanResponder: () => false,
             onMoveShouldSetPanResponder: (evt, gestureState) => {
-                return isDemoMode && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 50;
+                // Only respond to primarily horizontal gestures
+                // Require horizontal movement to be 3x greater than vertical
+                const isHorizontal = Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 3;
+                const hasSignificantMovement = Math.abs(gestureState.dx) > 30;
+                return isHorizontal && hasSignificantMovement;
             },
+            onPanResponderTerminationRequest: () => false,
             onPanResponderRelease: (evt, gestureState) => {
-                if (!isDemoMode) return;
+                const screenWidth = Dimensions.get('window').width;
+                const swipeThreshold = screenWidth * 0.125; // 1/8 of screen width
+                const velocityThreshold = 0.5; // Minimum velocity for quick swipes
 
-                // Swipe right - go back to Auto
-                if (gestureState.dx > 100) {
-                    router.push(`./Auto?team=${team}&regional=${regional}&match=${match}`);
+                // Check if swipe distance OR velocity exceeds threshold
+                const shouldNavigateRight = gestureState.dx > swipeThreshold ||
+                                           (gestureState.dx > 50 && gestureState.vx > velocityThreshold);
+                const shouldNavigateLeft = gestureState.dx < -swipeThreshold ||
+                                          (gestureState.dx < -50 && gestureState.vx < -velocityThreshold);
+
+                // Swipe right - go back to Auto (use back to animate from left)
+                if (shouldNavigateRight) {
+                    setImmediate(() => router.back());
                 }
-                // Swipe left - go to Post
-                else if (gestureState.dx < -100) {
-                    router.push({
+                // Swipe left - go to Post (push to animate from right)
+                else if (shouldNavigateLeft) {
+                    setImmediate(() => router.push({
                         pathname: "./Post",
                         params: {
                             team_num: team,
                             match_num: match,
                             regional: regional
                         }
-                    });
+                    }));
                 }
             },
         })
     ).current;
 
     return (
-        <ScrollView>
+        <DemoBorderWrapper>
+        <AppHeader />
+        <ScrollView contentContainerStyle={{ paddingBottom: 80 }}>
         <View style={styles.container} {...swipeGesture.panHandlers}>
         <View style={styles.navigationRow}>
-            <BackButton buttonName="Home Page" />
-            {isDemoMode && (
-                <Pressable
-                    style={styles.forwardButton}
-                    onPress={() => router.push({
-                        pathname: "./Post",
-                        params: {
-                            team_num: team,
-                            match_num: match,
-                            regional: regional
-                        }
-                    })}
-                >
-                    <Image style={styles.forwardButtonIcon} source={require('./../../../../../assets/images/back_arrow.png')} />
-                </Pressable>
-            )}
+            <Pressable
+                style={styles.backButton}
+                onPress={() => router.push(`./Auto?team=${team}&regional=${regional}&match=${match}`)}
+            >
+                <Image style={styles.backButtonIcon} source={require('./../../../../../assets/images/back_arrow.png')} />
+            </Pressable>
+            <Pressable
+                style={styles.forwardButton}
+                onPress={() => router.push({
+                    pathname: "./Post",
+                    params: {
+                        team_num: team,
+                        match_num: match,
+                        regional: regional
+                    }
+                })}
+            >
+                <Image style={styles.forwardButtonIcon} source={require('./../../../../../assets/images/back_arrow.png')} />
+            </Pressable>
         </View>
         <ProgressBar currentStep="Tele" />
 
@@ -406,11 +429,11 @@ const Tele = () => {
                     />
                   </Pressable>
                   <Text style={styles.algaeNumberText}>{counts.processed}</Text>
-                  <Pressable 
-                    style={incrementButtonStyle('processed')} 
+                  <Pressable
+                    style={incrementButtonStyle('processed')}
                     onPress={() => {
                       let now = new Date(Date.now());
-                      addAlgae(createTeleTimeDelta(eventStartTime, now), "processor");
+                      addAlgae(createTeleTimeDelta(eventStartTime, now), "processed");
                       incrementCount('processed');
                     }}
                   >
@@ -505,9 +528,7 @@ const Tele = () => {
 
             <Pressable
                 style={styles.buttonSubmit}
-                disabled={!selectedClimb}
                 onPress={async () => {
-                if (!selectedClimb) return;
                 //add info to a teammatch object, then pass it forward onto the next view. Contexts?
                 //see: passing using params: https://www.google.com/search?q=passing+state+object+onto+next+view+react+native+expo-router&sca_esv=edaa9008c38817d7&rlz=1C5CHFA_enUS1077US1082&sxsrf=AHTn8zrrP1ZSaAnIEMDJqqNpv2Tknb3E_g%3A1737951678525&ei=vgmXZ4DoH6fnkPIP34uaoAE&ved=0ahUKEwiAv73DhpWLAxWnM0QIHd-FBhQQ4dUDCBA&uact=5&oq=passing+state+object+onto+next+view+react+native+expo-router&gs_lp=Egxnd3Mtd2l6LXNlcnAiPHBhc3Npbmcgc3RhdGUgb2JqZWN0IG9udG8gbmV4dCB2aWV3IHJlYWN0IG5hdGl2ZSBleHBvLXJvdXRlcjIFECEYoAEyBRAhGKABSP0SUPMDWIsScAF4AZABAJgBhgGgAcsHqgEDOS4yuAEDyAEA-AEBmAIMoALrB8ICChAAGLADGNYEGEfCAgUQIRirApgDAIgGAZAGCJIHBDEwLjKgB6g6&sclient=gws-wiz-serp
                 const team_match_tele: TeamMatchTele = {
@@ -523,7 +544,24 @@ const Tele = () => {
                   park: selectedClimb === 'park'
                 }
 
-                await robotApiService.sendTeleData(team_match_tele)
+                // Map climb selection to climb_level number (default to 0 if none selected)
+                let climb_level = 0;
+                if (selectedClimb === 'deep') climb_level = 3;
+                else if (selectedClimb === 'shallow') climb_level = 2;
+                else if (selectedClimb === 'park') climb_level = 1;
+
+                // Save tele data to local cache (not submitting to server yet)
+                try {
+                    await matchDataCache.saveTeleData({
+                        ...team_match_tele,
+                        climb_level
+                    });
+                    console.log('📝 Tele data saved to cache');
+                } catch (err) {
+                    console.error('Error saving tele data to cache:', err);
+                }
+
+                // Navigate to Post page
                 router.push({
                   pathname: "./Post",
                   params: {
@@ -532,7 +570,6 @@ const Tele = () => {
                     regional: regional
                   }
               })
-                //</View>`./Post?team=${team}&regional=${regional}&match=${match}`)
             }}>
                 <Text style={styles.algaeCountButtonText}>Next</Text>
             </Pressable>
@@ -544,8 +581,8 @@ const Tele = () => {
         </View>
         {/* </View> */}
         </ScrollView>
-
-        
+        <AppFooter />
+        </DemoBorderWrapper>
     );
 };
 
@@ -554,12 +591,25 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'flex-start',
         padding: 25,
+        backgroundColor: '#E6F4FF',
     },
     navigationRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         width: '100%',
+    },
+    backButton: {
+        borderRadius: 4,
+        borderColor: 'white',
+        width: 20,
+        height: 20,
+        marginBottom: 15,
+        marginTop: 25,
+    },
+    backButtonIcon: {
+        width: 20,
+        height: 20,
     },
     forwardButton: {
         borderRadius: 4,

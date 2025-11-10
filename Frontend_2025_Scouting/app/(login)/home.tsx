@@ -4,9 +4,12 @@ import { View, ScrollView, Image, Text, Pressable, StyleSheet, Dimensions } from
 import { useRouter } from "expo-router";
 import { useFonts } from "expo-font";
 import {PieChart} from "react-native-chart-kit";
-import AppCache from "@/data/cache";
 import { getDemoMode, robotApiService } from "@/data/processing";
 import { Ionicons } from '@expo/vector-icons';
+import { AppHeader } from "@/components/AppHeader";
+import { AppFooter } from "@/components/AppFooter";
+import { DemoBorderWrapper } from "@/components/DemoBorderWrapper";
+import { useCompetition } from "@/contexts/CompetitionContext";
 
 const API_URL = "ec2-18-220-35-32.us-east-2.compute.amazonaws.com";
 //const API_URL = "localhost:8000"
@@ -15,6 +18,7 @@ const teamPhotoYear = 2025;
 
 const Home = () => {
   const router = useRouter();
+  const { activeCompetition } = useCompetition();
   const [firstTeamImage, setFirstTeamImage] = useState(null);
   const [firstPlaceTeam, setFirstPlaceTeam] = useState<string | null>(null);
 
@@ -58,8 +62,7 @@ const Home = () => {
   useEffect(() => {
     const getLeaderboardData = async () => {
       try {
-        const cache = await AppCache.getData();
-        const regional = cache!.regional;
+        const competition = activeCompetition || 'default';
 
         // Use robotApiService which has built-in fallback to mock data
         const data = await robotApiService.getSortedRobots({
@@ -73,7 +76,7 @@ const Home = () => {
           "CORAL_L3": false,
           "CORAL_L4": false,
           "CORAL_AVG": false
-        }, regional);
+        }, competition);
 
         if (data && data.length >= 3) {
           setFirstPlaceTeam(data[0].team_num.toString());
@@ -88,7 +91,7 @@ const Home = () => {
     };
 
     getLeaderboardData();
-  }, []);
+  }, [activeCompetition]);
   // The Doughnut Chart component that takes in an array of percentages
   // const Ring = ({ data }) => {
   //   const total = data.reduce((acc, value) => acc + value, 0);
@@ -130,25 +133,10 @@ const Home = () => {
   // }
 
   return (
-    <ScrollView>
-      <View style={styles.container}>
-        <View style={styles.titleContainer}>
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-            <Text style={styles.title}>HOME</Text>
-            <Image
-              source={require("../../assets/images/Dog House.png")}
-              style={styles.buttonImage2}
-            />
-          </View>
-          {getDemoMode() && (
-            <View style={styles.connectionIndicator}>
-              <Ionicons name="server-outline" size={16} color="#FFFFFF" />
-            </View>
-          )}
-        </View>
-
-        <View style={styles.line}></View>
-  
+    <DemoBorderWrapper>
+      <AppHeader />
+      <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 80 }}>
+        <View style={styles.container}>
         <Text style={styles.subtitle}>Scouting</Text>
         <View style={styles.group}>
           <Pressable
@@ -160,7 +148,7 @@ const Home = () => {
               style={styles.buttonImage}
             />
           </Pressable>
-  
+
           <Pressable
             style={styles.button}
             onPress={() => router.push("../(login)/(regional)/(Scouting)/(MatchScouting)/Pregame")}>
@@ -201,7 +189,8 @@ const Home = () => {
                 </View> */}
                 {/* New 2nd Icon on top of bar2nd */}
                 <View style={styles.iconOverlay}>
-                  <View style={styles.backgroundCircleSilver}></View> {/* Background Circle */}
+                  {/* Background Circle */}
+                  <View style={styles.backgroundCircleSilver}></View>
                   <Image
                     source={require("../../assets/images/2nd.png")} // New icon
                     style={styles.iconImageOverlay}
@@ -230,7 +219,8 @@ const Home = () => {
                 </View> */}
                 {/* New 1st Icon on top of bar1st */}
                 <View style={styles.iconOverlay}>
-                  <View style={styles.backgroundCircleGold}></View> {/* Background Circle */}
+                  {/* Background Circle */}
+                  <View style={styles.backgroundCircleGold}></View>
                   <Image
                     source={require("../../assets/images/1st.png")} // New icon
                     style={styles.iconImageOverlay}
@@ -264,7 +254,8 @@ const Home = () => {
                 {/* </View> */}
                 {/* New 3rd Icon on top of bar3rd */}
                 <View style={styles.iconOverlay}>
-                  <View style={styles.backgroundCircleBronze}></View> {/* Background Circle */}
+                  {/* Background Circle */}
+                  <View style={styles.backgroundCircleBronze}></View>
                   <Image
                     source={require("../../assets/images/3rd.png")} // New icon
                     style={styles.iconImageOverlay}
@@ -325,19 +316,6 @@ const Home = () => {
 
         {/* <View style={styles.container}></View> */}
 
-        {/* Logout Section */}
-        <Pressable
-          style={styles.logoutContainer}
-          onPress={() => {
-              AppCache.clearData();
-              router.push("/");
-            }}>
-          <Image
-            source={require("../../assets/images/Logout Rounded Left.png")}
-            style={styles.buttonImage3}
-          />
-          <Text style={styles.text2}> Logout</Text>
-        </Pressable>
 
         {/* <View style = {styles.group}> */}
           {/* <Pressable
@@ -350,8 +328,8 @@ const Home = () => {
             style={styles.button}
             onPress={() => router.push("../(login)/(regional)/(TeamInfo)/(tabs)/MatchData")}>
             <Text style={styles.text}>MATCH DATA</Text>
-          </Pressable>
-        </View>
+          </Pressable> */}
+        {/* </View>
         <Pressable
             style={styles.button}
             onPress={() => router.push("../(login)/(regional)/(TeamInfo)/(tabs)/QualData")}>
@@ -359,6 +337,8 @@ const Home = () => {
           </Pressable> */}
       </View>
     </ScrollView>
+    <AppFooter />
+    </DemoBorderWrapper>
   );
 }
 
@@ -433,19 +413,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "flex-start",
     padding: 25,
+    backgroundColor: '#E6F4FF',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-  },
-  titleContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 10,
-    marginTop: 10,
-    width: "100%",
   },
   connectionIndicator: {
     backgroundColor: '#DC3545',
@@ -718,10 +691,6 @@ const styles = StyleSheet.create({
   buttonImage: {
     width: 70,
     height: 70,
-  },
-  buttonImage2: {
-    width: 30,
-    height: 30,
   },
   buttonImage3: {
     width: 30,

@@ -1,14 +1,18 @@
 import { Link, router, useGlobalSearchParams, useRouter } from "expo-router";
 import BackButton from '../../../../backButton';
 import React, { useState, useRef, useEffect } from "react";
-import { View, Text, Pressable, StyleSheet, Image, ScrollView, PanResponder } from "react-native";
+import { View, Text, Pressable, StyleSheet, Image, ScrollView, PanResponder, Dimensions } from "react-native";
 // import { underDampedSpringCalculations } from "react-native-reanimated/lib/typescript/animation/springUtils";
 import { time } from "console";
 import { start } from "repl";
 import { robotApiService, getDemoMode } from "@/data/processing";
+import { matchDataCache } from "@/data/matchDataCache";
 import ProgressBar from '../../../../../components/ProgressBar'
 import { stringify } from "querystring";
 import StateBackButton from "@/components/StateBackButton";
+import { AppHeader } from "@/components/AppHeader";
+import { AppFooter } from "@/components/AppFooter";
+import { DemoBorderWrapper } from "@/components/DemoBorderWrapper";
 
 
 const Auto = () => {
@@ -155,40 +159,59 @@ const Auto = () => {
         setIsDemoMode(getDemoMode());
     }, []);
 
-    // Swipe gesture handler for demo mode
+    // Swipe gesture handler
     const swipeGesture = useRef(
         PanResponder.create({
+            onStartShouldSetPanResponder: () => false,
             onMoveShouldSetPanResponder: (evt, gestureState) => {
-                return isDemoMode && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 50;
+                // Only respond to primarily horizontal gestures
+                // Require horizontal movement to be 3x greater than vertical
+                const isHorizontal = Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 3;
+                const hasSignificantMovement = Math.abs(gestureState.dx) > 30;
+                return isHorizontal && hasSignificantMovement;
             },
+            onPanResponderTerminationRequest: () => false,
             onPanResponderRelease: (evt, gestureState) => {
-                if (!isDemoMode) return;
+                const screenWidth = Dimensions.get('window').width;
+                const swipeThreshold = screenWidth * 0.125; // 1/8 of screen width
+                const velocityThreshold = 0.5; // Minimum velocity for quick swipes
 
-                // Swipe right - go back to Pregame
-                if (gestureState.dx > 100) {
-                    router.push(`../Pregame?returned=true`);
+                // Check if swipe distance OR velocity exceeds threshold
+                const shouldNavigateRight = gestureState.dx > swipeThreshold ||
+                                           (gestureState.dx > 50 && gestureState.vx > velocityThreshold);
+                const shouldNavigateLeft = gestureState.dx < -swipeThreshold ||
+                                          (gestureState.dx < -50 && gestureState.vx < -velocityThreshold);
+
+                // Swipe right - go back to Pregame (use back to animate from left)
+                if (shouldNavigateRight) {
+                    setImmediate(() => router.back());
                 }
-                // Swipe left - go to Tele
-                else if (gestureState.dx < -100) {
-                    router.push(`./Tele?team=${team}&regional=${regional}&match=${match}`);
+                // Swipe left - go to Tele (push to animate from right)
+                else if (shouldNavigateLeft) {
+                    setImmediate(() => router.push(`./Tele?team=${team}&regional=${regional}&match=${match}`));
                 }
             },
         })
     ).current;
 
     return (
-        <ScrollView>
+        <DemoBorderWrapper>
+        <AppHeader />
+        <ScrollView contentContainerStyle={{ paddingBottom: 80 }}>
         <View style={styles.container} {...swipeGesture.panHandlers}>
             <View style={styles.navigationRow}>
-                <StateBackButton buttonName="Home Page" />
-                {isDemoMode && (
-                    <Pressable
-                        style={styles.forwardButton}
-                        onPress={() => router.push(`./Tele?team=${team}&regional=${regional}&match=${match}`)}
-                    >
-                        <Image style={styles.forwardButtonIcon} source={require('./../../../../../assets/images/back_arrow.png')} />
-                    </Pressable>
-                )}
+                <Pressable
+                    style={styles.backButton}
+                    onPress={() => router.push(`./Pregame?returned=true`)}
+                >
+                    <Image style={styles.backButtonIcon} source={require('./../../../../../assets/images/back_arrow.png')} />
+                </Pressable>
+                <Pressable
+                    style={styles.forwardButton}
+                    onPress={() => router.push(`./Tele?team=${team}&regional=${regional}&match=${match}`)}
+                >
+                    <Image style={styles.forwardButtonIcon} source={require('./../../../../../assets/images/back_arrow.png')} />
+                </Pressable>
             </View>
             <ProgressBar currentStep="Auto" />
 
@@ -396,11 +419,11 @@ const Auto = () => {
                     />
                   </Pressable>
                   <Text style={styles.algaeNumberText}>{counts.processed}</Text>
-                  <Pressable 
-                    style={incrementButtonStyle('processed')} 
+                  <Pressable
+                    style={incrementButtonStyle('processed')}
                     onPress={() => {
                       let now = new Date(Date.now());
-                      addAlgae(createTimeDelta(eventStartTime, now), "processor");
+                      addAlgae(createTimeDelta(eventStartTime, now), "processed");
                       incrementCount('processed');
                     }}
                   >
@@ -452,22 +475,24 @@ const Auto = () => {
       
 
             <Pressable style={styles.buttonSubmit} onPress={async () => {
-                //TODO: add info to a teammatch object, then send it forward for further changes.
-                // router.push(`./Auto?team=${selectedTeam}&regional=${selectedRegional}&match=${selectedMatch}`); 
-                
                 const team_match_auto: TeamMatchAuto = {
                     team_num: Number(team),
                     match_num: Number(match),
                     regional: regional,
-                    
                     algae: algae,
                     coral: coral,
                 }
 
-                // Sending Auto Data
-                await robotApiService.sendAutoData(team_match_auto)
+                // Save auto data to local cache (not submitting to server yet)
+                try {
+                    await matchDataCache.saveAutoData(team_match_auto);
+                    console.log('📝 Auto data saved to cache');
+                } catch (err) {
+                    console.error('Error saving auto data to cache:', err);
+                }
+
+                // Navigate to Tele page
                 router.push(`../(MatchScouting)/Tele?team=${team}&regional=${regional}&match=${match}`)
-                // router.push('../(MatchScouting)/Tele')
             }}>
                 <Text style={styles.algaeCountButtonText}>Next</Text>
             </Pressable>
@@ -479,6 +504,8 @@ const Auto = () => {
         </View>
 
         </ScrollView>
+        <AppFooter />
+        </DemoBorderWrapper>
     );
 };
 
@@ -487,12 +514,25 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'flex-start',
         padding: 25,
+        backgroundColor: '#E6F4FF',
     },
     navigationRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         width: '100%',
+    },
+    backButton: {
+        borderRadius: 4,
+        borderColor: 'white',
+        width: 20,
+        height: 20,
+        marginBottom: 15,
+        marginTop: 25,
+    },
+    backButtonIcon: {
+        width: 20,
+        height: 20,
     },
     forwardButton: {
         borderRadius: 4,

@@ -26,8 +26,8 @@ export const useRealtimeMatches = (regional: string, teamNum: number) => {
         {
           event: '*',
           schema: 'public',
-          table: 'reefscape_matches',
-          filter: `regional=eq.${regional} AND team_num=eq.${teamNum}`
+          table: 'match_reports',
+          filter: `regional=eq.${regional} AND team_number=eq.${teamNum}`
         },
         (payload) => {
           console.log('✨ Real-time: Match updated:', payload);
@@ -44,11 +44,11 @@ export const useRealtimeMatches = (regional: string, teamNum: number) => {
   const fetchMatches = async () => {
     try {
       const { data, error } = await supabase
-        .from('reefscape_matches')
+        .from('match_reports')
         .select('*')
         .eq('regional', regional)
-        .eq('team_num', teamNum)
-        .order('match_num', { ascending: true });
+        .eq('team_number', teamNum)
+        .order('match_number', { ascending: true });
 
       if (error) throw error;
       setMatches(data || []);

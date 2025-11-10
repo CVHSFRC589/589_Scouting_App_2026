@@ -12,9 +12,15 @@ const BackButton = (props: backButtonProps) => {
 let imageUrl: string;
 
 return (
-    <Pressable 
+    <Pressable
             style={styles.backButton}
-            onPress={() => router.back()}
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace('/(login)/home');
+              }
+            }}
             >
             <Image style = {styles.backButtonIcon} source={require('./../assets/images/back_arrow.png')} />
             </Pressable>

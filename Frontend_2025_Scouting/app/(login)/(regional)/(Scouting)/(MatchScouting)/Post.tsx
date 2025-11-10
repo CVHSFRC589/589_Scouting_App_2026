@@ -2,9 +2,16 @@ import { Link, router, useLocalSearchParams, useRouter } from "expo-router";
 import BackButton from "../../../../backButton";
 import { useFonts } from "expo-font";
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, StyleSheet, Animated, PanResponder, Pressable, TextInput, Dimensions, ScrollView, Alert, KeyboardAvoidingView, Platform, Image } from "react-native";
+import { View, Text, StyleSheet, Animated, PanResponder, Pressable, TextInput, Dimensions, ScrollView, Alert, KeyboardAvoidingView, Platform, Image, DeviceEventEmitter } from "react-native";
 import ProgressBar from '../../../../../components/ProgressBar'
 import { robotApiService, getDemoMode } from "@/data/processing";
+import { AppHeader } from "@/components/AppHeader";
+import { AppFooter } from "@/components/AppFooter";
+import { DemoBorderWrapper } from "@/components/DemoBorderWrapper";
+import { getDemoModeFromStorage, DEMO_MODE_CHANGED_EVENT } from "@/components/ConnectionHeader";
+import { matchDataCache } from "@/data/matchDataCache";
+import { uploadQueue } from "@/data/uploadQueue";
+import { useAuth } from "@/contexts/AuthContext";
 
 
 const Post = () => {
@@ -14,9 +21,10 @@ const Post = () => {
     regional: string;
   }>();
 
+  const { userProfile } = useAuth();
   const [isDemoMode, setIsDemoMode] = useState(false);
 
-  // Validate URL parameters are present
+  // Validate URL parameters are present and check demo mode
   useEffect(() => {
     if (!params.team_num || !params.match_num || !params.regional) {
       Alert.alert(
@@ -28,7 +36,25 @@ const Post = () => {
         }]
       );
     }
-    setIsDemoMode(getDemoMode());
+
+    // Check demo mode on mount
+    const checkDemoMode = async () => {
+      const demoEnabled = await getDemoModeFromStorage();
+      setIsDemoMode(demoEnabled);
+    };
+    checkDemoMode();
+
+    // Listen for demo mode changes
+    const subscription = DeviceEventEmitter.addListener(
+      DEMO_MODE_CHANGED_EVENT,
+      (event: { isDemoMode: boolean }) => {
+        setIsDemoMode(event.isDemoMode);
+      }
+    );
+
+    return () => {
+      subscription.remove();
+    };
   }, [params]);
 
   const [text, setText] = useState('');
@@ -44,7 +70,7 @@ const Post = () => {
   const screenWidth = Dimensions.get('window').width;  // Defined here
   const trackPadding = 20; // Keep the padding as before
   const trackWidth = screenWidth * 0.8;
-  const tickCount = 10;
+  const tickCount = 5;
   const tickSpacing = (trackWidth) / (tickCount-1); // Use full screen width for tick spacing
   
   const trackPanResponder = useRef(
@@ -65,7 +91,7 @@ const Post = () => {
           tension: 40,
         }).start();
 
-        const calculatedRating = Math.round((nearestTick / trackWidth) * 9) + 1;
+        const calculatedRating = Math.round((nearestTick / trackWidth) * 4) + 1;
         valueRef.current = calculatedRating;
         setDriverRating(calculatedRating);
       },
@@ -95,7 +121,7 @@ const Post = () => {
           const nearestTick = Math.round(currentPosition / tickSpacing) * tickSpacing;
 
           //update rating
-          const calculatedRating = Math.round((nearestTick / trackWidth) * 9) + 1;
+          const calculatedRating = Math.round((nearestTick / trackWidth) * 4) + 1;
           valueRef.current = calculatedRating;
           setDriverRating(calculatedRating);
         },
@@ -109,7 +135,7 @@ const Post = () => {
               tension: 40,
           }).start();
 
-          const calculatedRating = Math.round((nearestTick / trackWidth) * 9) + 1;
+          const calculatedRating = Math.round((nearestTick / trackWidth) * 4) + 1;
           valueRef.current = calculatedRating;
           setDriverRating(calculatedRating);
         },
@@ -139,32 +165,28 @@ const Post = () => {
   const [noshow, set_noshow] = useState<boolean>(false);
   const [defense, set_defense] = useState<boolean>(false);
   const [malfunction, set_malfunction] = useState<boolean>(false);
-  const [driverRating, setDriverRating] = useState<number>(5);
+  const [driverRating, setDriverRating] = useState<number>(3);
 
-  // Swipe gesture handler for demo mode
+  // Swipe gesture handler
   const swipeGesture = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (evt, gestureState) => {
-        return isDemoMode && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 50;
+        // Only allow right swipes (going back)
+        // More lenient: allow swipe if horizontal movement is at least 2x vertical movement
+        const isHorizontal = Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 2;
+        const isRightSwipe = gestureState.dx > 20;
+        return isHorizontal && isRightSwipe;
       },
       onPanResponderRelease: (evt, gestureState) => {
-        if (!isDemoMode) return;
+        const screenWidth = Dimensions.get('window').width;
+        const swipeThreshold = screenWidth * 0.125; // 1/8 of screen width
 
-        // Swipe right - go back to Tele
-        if (gestureState.dx > 100) {
-          router.push({
-            pathname: "./Tele",
-            params: {
-              team: params.team_num,
-              match: params.match_num,
-              regional: params.regional
-            }
-          });
+        // Swipe right - go back to Tele (use back to animate from left)
+        if (gestureState.dx > swipeThreshold) {
+          // Immediate navigation for better responsiveness
+          setImmediate(() => router.back());
         }
-        // Swipe left - go to Home
-        else if (gestureState.dx < -100) {
-          router.push("/(login)/home");
-        }
+        // No left swipe - Post is the final page
       },
     })
   ).current;
@@ -174,12 +196,11 @@ const Post = () => {
     setIsSubmitting(true);
 
     try {
+      // 1. Save current postgame data to cache
       const postGameData: TeamMatchPostGame = {
-        // Include base fields from URL parameters
         team_num: parseInt(params.team_num),
         match_num: parseInt(params.match_num),
         regional: params.regional,
-        // Include post-game specific fields
         driverRating: driverRating,
         disabled: disabled,
         defence: defense,
@@ -188,44 +209,71 @@ const Post = () => {
         comments: text,
       };
 
-      // Submit with timeout and retry logic for delay tolerance
-      const submitWithRetry = async (retries = 3) => {
-        for (let i = 0; i < retries; i++) {
-          try {
-            const response = await Promise.race([
-              robotApiService.updatePostGame(postGameData),
-              new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Request timeout')), 10000)
-              )
-            ]) as any;
+      await matchDataCache.savePostgameData(postGameData);
+      console.log('📝 Postgame data saved to cache');
 
-            // Check for acknowledgment in response
-            if (response && response.acknowledgment) {
-              // Server acknowledged
+      // 2. Get complete match data from cache
+      const completeMatchData = await matchDataCache.getMatchData();
+
+      // 3. Validate complete match data
+      const validation = matchDataCache.validateMatchData(completeMatchData);
+      if (!validation.valid) {
+        Alert.alert(
+          'Missing Information',
+          `Please ensure the following fields are filled in before submitting:\n\n${validation.missing.join('\n')}\n\nGo back to the Pregame page to enter this information.`,
+          [
+            {
+              text: 'Go to Pregame',
+              onPress: () => {
+                setIsSubmitting(false);
+                router.push(`./Pregame?returned=true`);
+              }
+            },
+            {
+              text: 'Cancel',
+              style: 'cancel',
+              onPress: () => setIsSubmitting(false)
             }
+          ]
+        );
+        return;
+      }
 
-            return response;
-          } catch (err) {
-            if (i === retries - 1) throw err;
-            // Retrying request
-            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
-          }
-        }
+      // 4. Check if in demo mode
+      if (isDemoMode) {
+        Alert.alert(
+          'Demo Mode',
+          `This would have submitted match data for Team ${completeMatchData!.team_num}, but you are in demo mode.\n\nNo data was sent to the server.`,
+          [
+            {
+              text: 'OK',
+              onPress: async () => {
+                await matchDataCache.clearMatchData();
+                router.push("/(login)/home");
+              }
+            }
+          ]
+        );
+        setIsSubmitting(false);
+        return;
+      }
+
+      // 5. Add user tracking and queue complete match data for upload
+      const matchDataWithUser = {
+        ...completeMatchData!,
+        submitted_by: userProfile?.id
       };
+      console.log('📤 Queuing complete match data:', matchDataWithUser);
+      await uploadQueue.enqueue('match_complete', matchDataWithUser);
+      console.log('✅ Complete match data queued for upload');
 
-      await submitWithRetry();
+      // 6. Clear cache after successful queue
+      await matchDataCache.clearMatchData();
 
-      // Update statistics (non-blocking)
-      Promise.all([
-        robotApiService.updateAverageCoralMatch(Number(params.team_num), params.regional),
-        robotApiService.updateAverageAlgaeMatch(Number(params.team_num), params.regional)
-      ]).catch(err => {
-        // Stats update failed
-      });
-
+      // 7. Show success message
       Alert.alert(
-        'Success',
-        `Match data for Team ${params.team_num} submitted successfully!\n\nThe server has acknowledged receipt and is processing your scouting data.`,
+        'Match Submitted',
+        `Match data for Team ${completeMatchData!.team_num} has been queued for upload.\n\nThe data will be sent to the server automatically.`,
         [
           {
             text: 'OK',
@@ -234,18 +282,18 @@ const Post = () => {
         ]
       );
     } catch (error) {
-      // Demo mode - show success message even if backend unavailable
+      console.error('Match submission error:', error);
+
       Alert.alert(
-        'Data Saved',
-        `Match data for Team ${params.team_num} has been recorded.\n\nNote: Running in demo mode.`,
+        'Submission Error',
+        `Could not queue match data.\n\nError: ${error instanceof Error ? error.message : 'Unknown error'}`,
         [
           {
             text: 'OK',
-            onPress: () => router.push("/(login)/home")
+            onPress: () => setIsSubmitting(false)
           }
         ]
       );
-      setIsSubmitting(false);
     }
 
 
@@ -254,23 +302,29 @@ const Post = () => {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1 }}
+    <DemoBorderWrapper>
+      <AppHeader />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
-    <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+    <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 80 }}>
     <View style={styles.container} {...swipeGesture.panHandlers}>
               <View style={styles.navigationRow}>
-                <BackButton buttonName="Home Page" />
-                {isDemoMode && (
-                    <Pressable
-                        style={styles.forwardButton}
-                        onPress={() => router.push("/(login)/home")}
-                    >
-                        <Image style={styles.forwardButtonIcon} source={require('./../../../../../assets/images/back_arrow.png')} />
-                    </Pressable>
-                )}
+                <Pressable
+                    style={styles.backButton}
+                    onPress={() => router.push({
+                        pathname: "./Tele",
+                        params: {
+                            team: params.team_num,
+                            match: params.match_num,
+                            regional: params.regional
+                        }
+                    })}
+                >
+                    <Image style={styles.backButtonIcon} source={require('./../../../../../assets/images/back_arrow.png')} />
+                </Pressable>
               </View>
               <ProgressBar currentStep="Post" />
       <Text style={styles.title}>Post-Game</Text>
@@ -299,11 +353,6 @@ const Post = () => {
           <Text style={styles.text}>3</Text>
           <Text style={styles.text}>4</Text>
           <Text style={styles.text}>5</Text>
-          <Text style={styles.text}>6</Text>
-          <Text style={styles.text}>7</Text>
-          <Text style={styles.text}>8</Text>
-          <Text style={styles.text}>9</Text>
-          <Text style={styles.text}>10</Text>
         </View>
       </View>
       
@@ -378,7 +427,9 @@ const Post = () => {
       </View>
     </View>
   </ScrollView>
-  </KeyboardAvoidingView>
+    </KeyboardAvoidingView>
+    <AppFooter />
+    </DemoBorderWrapper>
   );
 };
 
@@ -387,23 +438,23 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "flex-start",
     padding: 25,
+    backgroundColor: '#E6F4FF',
   },
   navigationRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     width: '100%',
   },
-  forwardButton: {
+  backButton: {
     borderRadius: 4,
     borderColor: 'white',
     width: 20,
     height: 20,
     marginBottom: 15,
     marginTop: 25,
-    transform: [{ rotate: '180deg' }],
   },
-  forwardButtonIcon: {
+  backButtonIcon: {
     width: 20,
     height: 20,
   },

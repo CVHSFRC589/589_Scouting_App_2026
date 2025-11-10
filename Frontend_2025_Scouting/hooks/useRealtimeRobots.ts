@@ -28,7 +28,7 @@ export const useRealtimeRobots = (regional: string) => {
         {
           event: '*', // Listen to all changes (INSERT, UPDATE, DELETE)
           schema: 'public',
-          table: 'reefscape_matches',
+          table: 'match_reports',
           filter: `regional=eq.${regional}`
         },
         (payload) => {
@@ -41,11 +41,11 @@ export const useRealtimeRobots = (regional: string) => {
         {
           event: '*',
           schema: 'public',
-          table: 'robot_info',
+          table: 'pit_reports',
           filter: `regional=eq.${regional}`
         },
         (payload) => {
-          console.log('✨ Real-time: Robot info changed:', payload);
+          console.log('✨ Real-time: Pit report changed:', payload);
           fetchRobots(); // Refresh when pit scouting data changes
         }
       )

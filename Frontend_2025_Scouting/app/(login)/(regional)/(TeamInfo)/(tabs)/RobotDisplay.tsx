@@ -1,15 +1,18 @@
-import React, { useEffect, useState } from "react";
-import { View, Image, Text, StyleSheet, ScrollView, TextInput, Pressable, ActivityIndicator, Dimensions } from "react-native";
+import React, { useEffect, useState, useRef } from "react";
+import { View, Image, Text, StyleSheet, ScrollView, TextInput, Pressable, ActivityIndicator, Dimensions, PanResponder } from "react-native";
 import { useGlobalSearchParams, useLocalSearchParams, useRouter } from "expo-router";
 import { useFonts } from "expo-font";
 import { robotApiService } from "@/data/processing";
 import BackButton from "@/app/backButton";
 import AppCache from "@/data/cache";
+import { AppHeader } from "@/components/AppHeader";
+import { useCompetition } from "@/contexts/CompetitionContext";
 
 const robotDisplay = () => {
   const router = useRouter();
   const {team} = useGlobalSearchParams<{ team:string } > ();
-    //regional string needs formatting to match backend naming scheme. 
+  const { activeCompetition } = useCompetition();
+  // Competition comes from CompetitionContext (database)
   const [fontLoaded] = useFonts({
     Koulen: require("../../../../../assets/fonts/Koulen-Regular.ttf"),
     InterBold: require("../../../../../assets/fonts/Inter_18pt-Bold.ttf"),
@@ -33,18 +36,22 @@ const robotDisplay = () => {
   const [regional, setRegional] = useState<string>(''); // State to store the regional value
   // const { team } = useLocalSearchParams();
 
-  const handleGetRobot = async (teamNum: number, regional: string) => {
+  const handleGetRobot = async (teamNum: number) => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
-      let params = await AppCache.getData(); // Ensure this is awaited to get the regional value
-      if (params) {
-        setRegional(params?.regional || ''); // Fallback to empty string if regional is not found
-      }
-      // console.log(regional)
-      
-      const response = await robotApiService.getRobot(teamNum, regional);
+      const regionalValue = activeCompetition || 'Test Competition'; // Use active competition from database
+      setRegional(regionalValue);
+
+      console.log('🔍 RobotDisplay - Fetching robot:', { teamNum, regionalValue });
+      const response = await robotApiService.getRobot(teamNum, regionalValue);
+      console.log('🔍 RobotDisplay - Received robot data:', {
+        team_num: response?.team_num,
+        remove: response?.remove,
+        processor: response?.processor,
+        net: response?.net,
+      });
       setRobot(response);
       setShowButton(false);
     } catch (err) {
@@ -56,57 +63,66 @@ const robotDisplay = () => {
   useEffect(() => {
 
     // fetchRegional().then(() => {
-    handleGetRobot(Number(team), regional);
+    handleGetRobot(Number(team));
     if (robot) {
       setError(null); // Clear error if robot data is successfully fetched
     }
   }, [regional]); // Empty array ensures it runs only once on mount
-  
+
+  // Swipe gesture handler - same pattern as Match Scouting
+  const swipeGesture = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        // Only respond to primarily horizontal gestures
+        // Require horizontal movement to be 3x greater than vertical
+        const isHorizontal = Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 3;
+        const hasSignificantMovement = Math.abs(gestureState.dx) > 30;
+        return isHorizontal && hasSignificantMovement;
+      },
+      onPanResponderTerminationRequest: () => false,
+      onPanResponderRelease: (evt, gestureState) => {
+        const screenWidth = Dimensions.get('window').width;
+        const swipeThreshold = screenWidth * 0.125; // 1/8 of screen width
+        const velocityThreshold = 0.5; // Minimum velocity for quick swipes
+
+        // Check if swipe distance OR velocity exceeds threshold
+        const shouldNavigateRight = gestureState.dx > swipeThreshold ||
+                                   (gestureState.dx > 50 && gestureState.vx > velocityThreshold);
+        const shouldNavigateLeft = gestureState.dx < -swipeThreshold ||
+                                  (gestureState.dx < -50 && gestureState.vx < -velocityThreshold);
+
+        // Swipe right - no previous page (already on first tab)
+        // Swipe left - go to MatchData
+        if (shouldNavigateLeft) {
+          setImmediate(() => router.push(`./MatchData?team=${team}`));
+        }
+      },
+    })
+  ).current;
 
   return (
-    <ScrollView style={styles.contentContainer}>
-      <BackButton buttonName="Home Page"/>
-      {/* {showButton && (
-        <>
-          <TextInput
-            style={[styles.input, { marginBottom: 10 }]}
-            placeholder="Enter Team Number"
-            value={teamNumber}
-            onChangeText={setTeamNumber}
-            keyboardType="numeric"
-            maxLength={5}
-          />
-          <Pressable
-            style={({ pressed }) => [
-              {
-                backgroundColor: '#0071BC',
-                padding: 10,
-                borderRadius: 8,
-                // margin: 10,
-                opacity: pressed ? 0.7 : 1,
-                width: '100%',
-              }
-            ]}
-            onPress={() => handleGetRobot(Number(teamNumber))}
-          >
-            <Text style={[styles.text, { color: 'white', marginLeft: 0, textAlign: 'center' }]}>
-              Load Robot Data
-            </Text>
-          </Pressable>
-        </>
-      )} */}
+    <>
+      <AppHeader />
+      <ScrollView style={styles.contentContainer} contentContainerStyle={{ paddingBottom: 20 }}>
+        <View {...swipeGesture.panHandlers}>
+          {isLoading && <ActivityIndicator size="large" color="#0071BC" />}
 
-      {isLoading && <ActivityIndicator size="large" color="#0071BC" />}
-      {/* {error && <Text style={[styles.text, { color: 'red' }]}>{error}</Text>} */}
+          {/* Header Section */}
+          <View style={styles.titleRow}>
+            <Pressable
+              style={styles.backButtonInline}
+              onPress={() => {
+                router.replace('/(login)/(regional)/Leaderboard');
+              }}
+            >
+              <Image style={styles.backButtonIcon} source={require('../../../../../assets/images/back_arrow.png')} />
+            </Pressable>
+            <Text style={styles.title}>Team {Array.isArray(team) ? team[0] : team || 'Unknown'}</Text>
+          </View>
 
-      <View style={styles.titleContainer}>
-        <Text style={styles.title}>ROBOT DISPLAY</Text>
-      </View>
-      {/* <Text style={styles.subtitle}>{robot?.team_num || '99999'}</Text> */}
-      <Text style={styles.subtitle}>{team}</Text>
-
-      {/* Algae and Removal row */}
-      {/* <View style={styles.rowContainer}> */}
+      {/* Algae Capabilities Section */}
+      <View style={styles.sectionContainer}>
         <View style={styles.textWithBoxContainer}>
           <View style={styles.roundedBox}>
             <Image
@@ -114,70 +130,96 @@ const robotDisplay = () => {
               style={styles.AlgaeContainer}
             />
           </View>
-          <Text style={styles.text}>Processed: </Text>
-          {robot?.avg_algae_processed && (
-            <View style={styles.smallBox}>
-              <Text style={styles.textinABox}>{robot.avg_algae_processed.toFixed(1)}</Text>
-            </View>
-          )}
-        
-        {/* </View> */}
+          <Text style={styles.text}>Can Process:</Text>
         </View>
-      {/* </View> */}
 
-      <View style={styles.textWithBoxContainer}>
-          <View style={styles.roundedBox}>
-            <Image
-              source={require("../../../../../assets/images/algae.png")}
-              style={styles.AlgaeContainer}
-            />
+        {/* Algae capability badges - stacked vertically */}
+        <View style={styles.badgeColumn}>
+          {/* Remove Badge */}
+          <View style={[styles.capabilityBadge, { backgroundColor: robot?.remove ? '#4CAF50' : '#F44336' }]}>
+            <Text style={styles.badgeLabel}>Remove</Text>
+            <Text style={styles.badgeIcon}>{robot?.remove ? '✓' : '✗'}</Text>
           </View>
-          <Text style={styles.text}>Can Remove?: </Text>
-          <Text style={styles.textinABox}>
-            {robot?.remove ? 'Yes' : 'No'}
-          </Text>
-        {/* </View> */}
+
+          {/* Process Badge */}
+          <View style={[styles.capabilityBadge, { backgroundColor: robot?.processor ? '#4CAF50' : '#F44336' }]}>
+            <Text style={styles.badgeLabel}>Process</Text>
+            <Text style={styles.badgeIcon}>{robot?.processor ? '✓' : '✗'}</Text>
+          </View>
+
+          {/* Net Badge */}
+          <View style={[styles.capabilityBadge, { backgroundColor: robot?.net ? '#4CAF50' : '#F44336' }]}>
+            <Text style={styles.badgeLabel}>Net</Text>
+            <Text style={styles.badgeIcon}>{robot?.net ? '✓' : '✗'}</Text>
+          </View>
         </View>
-      {/* </View> */}
+      </View>
 
       {/* Climb Section */}
-      <View style={styles.textWithBoxContainer}>
-        <View style={styles.roundedBox}>
-          <Image
-            source={require("../../../../../assets/images/stairs.png")}
-            style={styles.StairsContainer}
-          />
+      <View style={styles.sectionContainer}>
+        <View style={styles.textWithBoxContainer}>
+          <View style={styles.roundedBox}>
+            <Image
+              source={require("../../../../../assets/images/stairs.png")}
+              style={styles.StairsContainer}
+            />
+          </View>
+          <Text style={styles.text}>Can Climb:</Text>
         </View>
-        <Text style={styles.text}>Climb: </Text>
-        {/* <View style={styles.box2}> */}
-          <Text style={styles.textinABox}>
-            {robot?.climb_deep ? 'Deep' : robot?.climb_shallow ? 'Shallow' : 'None'}
-          </Text>
-        {/* </View> */}
+
+        {/* Climb capability badges - stacked vertically */}
+        <View style={styles.badgeColumn}>
+          {/* Deep Badge */}
+          <View style={[styles.capabilityBadge, { backgroundColor: robot?.climb_deep ? '#4CAF50' : '#F44336' }]}>
+            <Text style={styles.badgeLabel}>Deep</Text>
+            <Text style={styles.badgeIcon}>{robot?.climb_deep ? '✓' : '✗'}</Text>
+          </View>
+
+          {/* Shallow Badge */}
+          <View style={[styles.capabilityBadge, { backgroundColor: robot?.climb_shallow ? '#4CAF50' : '#F44336' }]}>
+            <Text style={styles.badgeLabel}>Shallow</Text>
+            <Text style={styles.badgeIcon}>{robot?.climb_shallow ? '✓' : '✗'}</Text>
+          </View>
+        </View>
       </View>
 
       {/* Coral Section */}
-      <View style={styles.textWithBoxContainer}>
-        <View style={styles.roundedBox}>
-          <Image
-            source={require("../../../../../assets/images/FigmaCoral.png")}
-            style={styles.CoralContainer}
-          />
+      <View style={styles.sectionContainer}>
+        <View style={styles.textWithBoxContainer}>
+          <View style={styles.roundedBox}>
+            <Image
+              source={require("../../../../../assets/images/FigmaCoral.png")}
+              style={styles.CoralContainer}
+            />
+          </View>
+          <Text style={styles.text}>Coral:</Text>
         </View>
-        
-        <Text style={styles.text}>Coral: </Text>
-      
-        <View style={styles.coralLevelcontainer}>
-          {[
-            { key: 'L1', value: robot?.L1_scoring },
-            { key: 'L2', value: robot?.L2_scoring },
-            { key: 'L3', value: robot?.L3_scoring },
-            { key: 'L4', value: robot?.L4_scoring }
-          ].map((level) => (
-            <View key={level.key} style={[styles.coralLevel, !level.value && { opacity: 0.3 }]}>
-              <Text style={styles.coralLeveltext}>{level.key}</Text>
-            </View>
-          ))}
+
+        {/* Coral capability badges - stacked vertically */}
+        <View style={styles.badgeColumn}>
+          {/* L4 Badge */}
+          <View style={[styles.capabilityBadge, { backgroundColor: robot?.L4_scoring ? '#4CAF50' : '#F44336' }]}>
+            <Text style={styles.badgeLabel}>L4</Text>
+            <Text style={styles.badgeIcon}>{robot?.L4_scoring ? '✓' : '✗'}</Text>
+          </View>
+
+          {/* L3 Badge */}
+          <View style={[styles.capabilityBadge, { backgroundColor: robot?.L3_scoring ? '#4CAF50' : '#F44336' }]}>
+            <Text style={styles.badgeLabel}>L3</Text>
+            <Text style={styles.badgeIcon}>{robot?.L3_scoring ? '✓' : '✗'}</Text>
+          </View>
+
+          {/* L2 Badge */}
+          <View style={[styles.capabilityBadge, { backgroundColor: robot?.L2_scoring ? '#4CAF50' : '#F44336' }]}>
+            <Text style={styles.badgeLabel}>L2</Text>
+            <Text style={styles.badgeIcon}>{robot?.L2_scoring ? '✓' : '✗'}</Text>
+          </View>
+
+          {/* L1 Badge */}
+          <View style={[styles.capabilityBadge, { backgroundColor: robot?.L1_scoring ? '#4CAF50' : '#F44336' }]}>
+            <Text style={styles.badgeLabel}>L1</Text>
+            <Text style={styles.badgeIcon}>{robot?.L1_scoring ? '✓' : '✗'}</Text>
+          </View>
         </View>
       </View>
 
@@ -241,8 +283,10 @@ const robotDisplay = () => {
             <Text style={styles.textComment}>No Picture Available</Text>
           )}
         </View> */}
-      </View>
-    </ScrollView>
+        </View>
+        </View>
+      </ScrollView>
+    </>
   );
 };
 
@@ -256,24 +300,38 @@ const styles = StyleSheet.create({
     padding: 25,
     flexGrow: 1,
     flex: 1,
+    backgroundColor: '#E6F4FF',
   },
-  titleContainer: {
+  titleRow: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: 'flex-start',
+    width: '100%',
+    gap: 15,
+    marginTop: 0,
+    marginBottom: 20,
+    paddingTop: 0,
+    paddingBottom: 0,
+  },
+  backButtonInline: {
+    width: 20,
+    height: 20,
+    padding: 0,
+    margin: 0,
+  },
+  backButtonIcon: {
+    width: 20,
+    height: 20,
   },
   title: {
-    fontFamily: "Koulen",
-    fontSize: 40,
+    fontFamily: "InterBold",
+    fontSize: 30,
     textAlign: "left",
-    marginTop: 20,
-  },
-  subtitle: {
-    fontFamily: 'Koulen',
-    fontSize: 36,
     color: '#0071BC',
-    textAlign: "left",
-    marginTop:-30,
-    marginLeft: "-2%",
+    margin: 0,
+    padding: 0,
+    lineHeight: 30,
+    flexShrink: 1,
   },
   text: {
     fontFamily: 'InterBold',
@@ -281,11 +339,42 @@ const styles = StyleSheet.create({
     color: '#0071BC',
     marginLeft: 10,
   },
+  sectionContainer: {
+    marginBottom: 10,
+    width: '100%',
+  },
   textWithBoxContainer: {
-    flexDirection: "row", 
+    flexDirection: "row",
     alignItems: "center",
     // backgroundColor :'pink',
     width: '100%',
+  },
+  badgeColumn: {
+    alignItems: 'flex-end', // Right justify all badges
+    marginTop: 10,
+    width: '100%',
+  },
+  capabilityBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    marginVertical: 3,
+    width: 150, // Fixed width for all badges
+  },
+  badgeLabel: {
+    fontFamily: 'InterBold',
+    fontSize: 14,
+    color: '#FFFFFF',
+    flex: 1,
+  },
+  badgeIcon: {
+    fontFamily: 'InterBold',
+    fontSize: 20,
+    color: '#FFFFFF',
+    marginLeft: 5,
   },
   AlgaeContainer: {
     width: 55,

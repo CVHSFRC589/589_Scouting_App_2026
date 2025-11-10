@@ -1,21 +1,26 @@
 import { createClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 
 // Validate environment variables
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+// Supports both legacy anon key and new publishable key
+// Read from expo-constants (loaded from app.config.js which reads .env)
+const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl;
+const supabaseKey = Constants.expoConfig?.extra?.supabaseKey;
 
-if (!supabaseUrl || !supabaseAnonKey) {
+if (!supabaseUrl || !supabaseKey) {
   console.error('❌ Missing Supabase environment variables!');
   console.error('Please check your .env file has:');
-  console.error('- EXPO_PUBLIC_SUPABASE_URL');
-  console.error('- EXPO_PUBLIC_SUPABASE_ANON_KEY');
+  console.error('- PUBLIC_SUPABASE_URL');
+  console.error('- PUBLIC_SUPABASE_KEY (recommended: sb_publishable_...)');
+  console.error('  OR PUBLIC_SUPABASE_ANON_KEY (legacy: eyJ...)');
 }
 
 // Create Supabase client with React Native optimizations
+// Works with both publishable keys (sb_publishable_...) and legacy anon keys (eyJ...)
 export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key',
+  supabaseKey || 'placeholder-key',
   {
     auth: {
       // Use AsyncStorage for session persistence
@@ -42,7 +47,7 @@ export const supabase = createClient(
 export const testSupabaseConnection = async (): Promise<boolean> => {
   try {
     const { data, error } = await supabase
-      .from('teams')
+      .from('robot_stats')
       .select('count')
       .limit(1);
 
