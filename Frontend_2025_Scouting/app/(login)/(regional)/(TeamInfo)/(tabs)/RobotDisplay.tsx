@@ -118,7 +118,7 @@ const robotDisplay = () => {
             >
               <Image style={styles.backButtonIcon} source={require('../../../../../assets/images/back_arrow.png')} />
             </Pressable>
-            <Text style={styles.title}>Team {Array.isArray(team) ? team[0] : team || 'Unknown'}</Text>
+            <Text style={styles.title}>Team{Array.isArray(team) ? team[0] : team || 'Unknown'}</Text>
           </View>
 
       {/* Algae Capabilities Section */}
@@ -130,25 +130,25 @@ const robotDisplay = () => {
               style={styles.AlgaeContainer}
             />
           </View>
-          <Text style={styles.text}>Can Process:</Text>
+          <Text style={styles.text}>Algae:</Text>
         </View>
 
         {/* Algae capability badges - stacked vertically */}
         <View style={styles.badgeColumn}>
           {/* Remove Badge */}
-          <View style={[styles.capabilityBadge, { backgroundColor: robot?.remove ? '#4CAF50' : '#F44336' }]}>
+          <View style={[styles.algaeBadges, { backgroundColor: robot?.remove ? '#4CAF50' : '#F44336' }]}>
             <Text style={styles.badgeLabel}>Remove</Text>
             <Text style={styles.badgeIcon}>{robot?.remove ? '✓' : '✗'}</Text>
           </View>
 
           {/* Process Badge */}
-          <View style={[styles.capabilityBadge, { backgroundColor: robot?.processor ? '#4CAF50' : '#F44336' }]}>
+          <View style={[styles.algaeBadges, { backgroundColor: robot?.processor ? '#4CAF50' : '#F44336' }]}>
             <Text style={styles.badgeLabel}>Process</Text>
             <Text style={styles.badgeIcon}>{robot?.processor ? '✓' : '✗'}</Text>
           </View>
 
           {/* Net Badge */}
-          <View style={[styles.capabilityBadge, { backgroundColor: robot?.net ? '#4CAF50' : '#F44336' }]}>
+          <View style={[styles.algaeBadges, { backgroundColor: robot?.net ? '#4CAF50' : '#F44336' }]}>
             <Text style={styles.badgeLabel}>Net</Text>
             <Text style={styles.badgeIcon}>{robot?.net ? '✓' : '✗'}</Text>
           </View>
@@ -164,11 +164,11 @@ const robotDisplay = () => {
               style={styles.StairsContainer}
             />
           </View>
-          <Text style={styles.text}>Can Climb:</Text>
+          <Text style={styles.text}>Climb:</Text>
         </View>
 
         {/* Climb capability badges - stacked vertically */}
-        <View style={styles.badgeColumn}>
+        <View style={styles.climbContainer}>
           {/* Deep Badge */}
           <View style={[styles.capabilityBadge, { backgroundColor: robot?.climb_deep ? '#4CAF50' : '#F44336' }]}>
             <Text style={styles.badgeLabel}>Deep</Text>
@@ -196,27 +196,27 @@ const robotDisplay = () => {
         </View>
 
         {/* Coral capability badges - stacked vertically */}
-        <View style={styles.badgeColumn}>
+        <View style={styles.coralLevelcontainer}>
           {/* L4 Badge */}
-          <View style={[styles.capabilityBadge, { backgroundColor: robot?.L4_scoring ? '#4CAF50' : '#F44336' }]}>
+          <View style={[styles.coralBadges, { backgroundColor: robot?.L4_scoring ? '#4CAF50' : '#F44336' }]}>
             <Text style={styles.badgeLabel}>L4</Text>
             <Text style={styles.badgeIcon}>{robot?.L4_scoring ? '✓' : '✗'}</Text>
           </View>
 
           {/* L3 Badge */}
-          <View style={[styles.capabilityBadge, { backgroundColor: robot?.L3_scoring ? '#4CAF50' : '#F44336' }]}>
+          <View style={[styles.coralBadges, { backgroundColor: robot?.L3_scoring ? '#4CAF50' : '#F44336' }]}>
             <Text style={styles.badgeLabel}>L3</Text>
             <Text style={styles.badgeIcon}>{robot?.L3_scoring ? '✓' : '✗'}</Text>
           </View>
 
           {/* L2 Badge */}
-          <View style={[styles.capabilityBadge, { backgroundColor: robot?.L2_scoring ? '#4CAF50' : '#F44336' }]}>
+          <View style={[styles.coralBadges, { backgroundColor: robot?.L2_scoring ? '#4CAF50' : '#F44336' }]}>
             <Text style={styles.badgeLabel}>L2</Text>
             <Text style={styles.badgeIcon}>{robot?.L2_scoring ? '✓' : '✗'}</Text>
           </View>
 
           {/* L1 Badge */}
-          <View style={[styles.capabilityBadge, { backgroundColor: robot?.L1_scoring ? '#4CAF50' : '#F44336' }]}>
+          <View style={[styles.coralBadges, { backgroundColor: robot?.L1_scoring ? '#4CAF50' : '#F44336' }]}>
             <Text style={styles.badgeLabel}>L1</Text>
             <Text style={styles.badgeIcon}>{robot?.L1_scoring ? '✓' : '✗'}</Text>
           </View>
@@ -263,7 +263,7 @@ const robotDisplay = () => {
 
       <View>
         <View>
-          <Text style={styles.Commenttext}>Comments</Text>
+          <Text style={styles.Commenttext}>Comments:</Text>
         </View>
           <Text style={styles.textComment}>
             {robot?.comments || 'No Comments Available'}
@@ -350,19 +350,47 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   badgeColumn: {
-    alignItems: 'flex-end', // Right justify all badges
-    marginTop: 10,
+    flexDirection: 'row',    // arrange badges in a row
+    flexWrap: 'wrap',        // allow wrapping to multiple rows
+    justifyContent: 'flex-start', // use consistent margins for spacing
     width: '100%',
+    marginTop: 10,
   },
   capabilityBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderRadius: 8,
-    paddingVertical: 4,
     paddingHorizontal: 12,
-    marginVertical: 3,
-    width: 150, // Fixed width for all badges
+    marginVertical: 6,
+    marginRight: 8,            // consistent horizontal gap
+    height: 44,               // consistent badge height
+    flexBasis: '48%',         // target two per row
+    maxWidth: '48%',          // don't grow past the row width
+  },
+  algaeBadges: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginBottom: 6,
+    marginRight: 8,            // consistent horizontal gap
+    height: 44,
+    flexBasis: '30.95%',          // make algae badges narrower
+    maxWidth: '30.95%',
+  },
+  coralBadges: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginVertical: 6,
+    marginRight: 8,            // consistent horizontal gap
+    height: 44,
+    flexBasis: '48%',          // match other badges for consistent layout
+    maxWidth: '48%',
   },
   badgeLabel: {
     fontFamily: 'InterBold',
@@ -431,8 +459,27 @@ const styles = StyleSheet.create({
   },
   coralLevelcontainer: {
     flexDirection: 'row',
-    width: (Dimensions.get('window').width-138-53),
+    width: '47%',
     // backgroundColor: 'green',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: 8,
+    marginVertical: 6,
+    marginRight: 6,
+    height: 44,    
+    marginTop: 10,               
+  },
+  climbContainer: {
+    flexDirection: 'row',
+    width: '100%',
+    // backgroundColor: 'green',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: 8,
+    marginVertical: 6,
+    marginRight: 6,
+    height: 44,    
+    marginTop: 10,            
   },
     coralLeveltext: {
       fontFamily: 'Inter',
@@ -469,17 +516,18 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   textComment: {
-    fontFamily: "InterBold",
-    fontSize: 16,
+    fontFamily: "Inter",
+    fontSize: 20,
     textAlign: "center",
     color: "#000000",
   },
   Commenttext:{
     fontFamily: "InterBold",
-    fontSize: 16,
+    fontSize: 20,
     color: "#0071BC",
     marginTop: 15,
     textAlign: 'left',
+    
     // marginLeft: 5,
   },
   picturebox: {
