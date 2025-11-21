@@ -355,12 +355,6 @@ Now we'll install all the Node.js packages (libraries) that the project needs.
 Run this command:
 
 ```bash
-npm install
-```
-
-**If you encounter peer dependency errors**, use:
-
-```bash
 npm install --legacy-peer-deps
 ```
 
