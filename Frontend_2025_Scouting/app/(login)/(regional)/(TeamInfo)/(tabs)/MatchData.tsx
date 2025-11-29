@@ -7,16 +7,25 @@ import { robotApiService } from "@/data/processing";
 import AppCache from "@/data/cache";
 import { AppHeader } from "@/components/AppHeader";
 import { useCompetition } from "@/contexts/CompetitionContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabaseService } from "@/data/supabaseService";
 
 const matchData = () => {
   const { team } = useGlobalSearchParams<{ team: string }>();
   const router = useRouter();
   const { activeCompetition } = useCompetition();
+  const { userProfile } = useAuth();
+  const isAdmin = userProfile?.is_admin || false;
 
   const [robot, setRobot] = useState<Robot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [visibleMetrics, setVisibleMetrics] = useState<boolean[]>([true, true, true, true, true, true]);
+
+  // Star state
+  const [hasUserStar, setHasUserStar] = useState(false);
+  const [hasAdminStar, setHasAdminStar] = useState(false);
+  const [isTogglingStar, setIsTogglingStar] = useState(false);
 
   const screenWidth = Dimensions.get('window').width;
 
@@ -40,6 +49,65 @@ const matchData = () => {
     InterBold: require("../../../../../assets/fonts/Inter_18pt-Bold.ttf"),
     InterExtraBold: require("../../../../../assets/fonts/Inter_18pt-ExtraBold.ttf"),
   });
+
+  // Load star status
+  const loadStarStatus = async () => {
+    if (!activeCompetition || !team) return;
+
+    try {
+      const teamNum = Number(team);
+      const [userStar, adminStar] = await Promise.all([
+        supabaseService.checkUserStar(teamNum, activeCompetition),
+        supabaseService.checkAdminStar(teamNum, activeCompetition)
+      ]);
+
+      setHasUserStar(userStar);
+      setHasAdminStar(adminStar);
+    } catch (error) {
+      console.error('Error loading star status:', error);
+    }
+  };
+
+  // Handle star press with same logic as StatsAccordion
+  const handleStarPress = async () => {
+    if (isTogglingStar || !activeCompetition || !team) return;
+
+    setIsTogglingStar(true);
+
+    try {
+      const teamNumber = Number(team);
+      const regional = activeCompetition;
+
+      if (isAdmin) {
+        // Admin logic: First tap = user star, second tap = admin star
+        if (!hasUserStar) {
+          const added = await supabaseService.toggleUserStar(teamNumber, regional);
+          setHasUserStar(added);
+        } else if (!hasAdminStar) {
+          const added = await supabaseService.toggleAdminStar(teamNumber, regional);
+          setHasAdminStar(added);
+        } else {
+          // Third tap: Remove both stars
+          await supabaseService.toggleAdminStar(teamNumber, regional);
+          setHasAdminStar(false);
+          await supabaseService.toggleUserStar(teamNumber, regional);
+          setHasUserStar(false);
+        }
+      } else {
+        // Regular user: Toggle user star only
+        const added = await supabaseService.toggleUserStar(teamNumber, regional);
+        setHasUserStar(added);
+      }
+    } catch (error) {
+      console.error('Error toggling star:', error);
+    } finally {
+      setIsTogglingStar(false);
+    }
+  };
+
+  useEffect(() => {
+    loadStarStatus();
+  }, [team, activeCompetition]);
 
   useEffect(() => {
     const loadRobotData = async () => {
@@ -201,6 +269,25 @@ const matchData = () => {
               <Image style={styles.backButtonIcon} source={require('../../../../../assets/images/back_arrow.png')} />
             </Pressable>
             <Text style={styles.title}>Team {Array.isArray(team) ? team[0] : team || 'Unknown'}</Text>
+
+            {/* Star Button */}
+            <Pressable onPress={handleStarPress} disabled={isTogglingStar} style={styles.starButton}>
+              <Image
+                source={
+                  hasAdminStar
+                    ? require('../../../../../assets/images/fullStar.png')
+                    : hasUserStar
+                    ? require('../../../../../assets/images/fullStar.png')
+                    : require('../../../../../assets/images/outlineStar.png')
+                }
+                style={[
+                  styles.starIcon,
+                  hasAdminStar && styles.blueStarTint,
+                  hasUserStar && !hasAdminStar && styles.yellowStarTint,
+                  isTogglingStar && styles.starDisabled
+                ]}
+              />
+            </Pressable>
           </View>
 
           <Text style={styles.subtitle}>Average Performance</Text>
@@ -332,7 +419,7 @@ const styles = StyleSheet.create({
   titleRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
     width: '100%',
     gap: 15,
     marginTop: 0,
@@ -358,7 +445,23 @@ const styles = StyleSheet.create({
     margin: 0,
     padding: 0,
     lineHeight: 30,
-    flexShrink: 1,
+    flex: 1,
+  },
+  starButton: {
+    padding: 5,
+  },
+  starIcon: {
+    width: 30,
+    height: 30,
+  },
+  yellowStarTint: {
+    tintColor: '#FFD700',
+  },
+  blueStarTint: {
+    tintColor: '#0071bc',
+  },
+  starDisabled: {
+    opacity: 0.5,
   },
   subtitle: {
     fontFamily: 'Koulen',

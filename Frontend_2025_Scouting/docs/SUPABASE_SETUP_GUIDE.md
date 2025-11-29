@@ -1,459 +1,608 @@
 # Supabase Database Setup Guide
 
-This guide will walk you through setting up a new Supabase database for the FRC 589 Scouting App from scratch.  Note this guide is intended only for Scouting Team Leads and mentors who have access to the 589 Supabase account.
+**Complete guide for setting up a new Supabase database for the FRC 589 Scouting App from scratch.**
+
+This guide is intended for Scouting Team Leads and mentors who have access to the 589 Supabase account or are setting up their own instance.
+
+**Version:** 2.1.0
+**Last Updated:** 2025-11-29
+
+---
+
+## Table of Contents
+
+1. [Prerequisites](#prerequisites)
+2. [Step 1: Create Supabase Project](#step-1-create-supabase-project)
+3. [Step 2: Initialize Database Schema](#step-2-initialize-database-schema)
+4. [Step 3: Configure Authentication](#step-3-configure-authentication)
+5. [Step 4: Load Test Data (Optional)](#step-4-load-test-data-optional)
+6. [Step 5: Grant Admin Access](#step-5-grant-admin-access)
+7. [Step 6: Configure Frontend](#step-6-configure-frontend)
+8. [Verification](#verification)
+9. [Troubleshooting](#troubleshooting)
 
 ---
 
 ## Prerequisites
 
-- A Supabase account (free tier is fine)
+- Supabase account (free tier is sufficient)
 - Access to https://supabase.com/dashboard
-- Basic understanding of SQL (we'll provide all the scripts)
+- Basic understanding of SQL (all scripts provided)
+- VS Code with the project open
 
 ---
 
-## Step 1: Create a New Supabase Project
+## Step 1: Create Supabase Project
 
 ### 1.1 Sign in to Supabase
 
 1. Go to https://supabase.com/dashboard
-2. Sign in with your account (or create one if you don't have one)
+2. Sign in with your account (or create one if needed)
 
 ### 1.2 Create New Project
 
-1. Click the **"New Project"** button
-2. Fill in the project details on the "Create a new project" form:
-   - **Organization**: Select your organization from the dropdown (it will default to your team's organization if you have one, or your personal account)
-   - **Project name**: Enter a descriptive name like `FRC 589 Scouting App` or `2026 Scouting App`
-   - **Database Password**: Either use the auto-generated strong password (click "Copy" to save it), or click "Generate a password" for a new one. **Save this password securely - you'll need it for database access!**
-   - **Region**: Select the region closest to your team (default is "Americas" for most US teams)
+1. Click **"New Project"** button
+2. Fill in project details:
+   - **Organization**: Select your team's organization
+   - **Project name**: `FRC 589 Scouting App` or `2025 Scouting App`
+   - **Database Password**: Generate and **save this password securely**
+   - **Region**: Select closest region (Americas for US teams)
+3. Leave security options at defaults
+4. Click **"Create new project"**
+5. Wait ~2 minutes for provisioning
 
-3. **Security Options** (you can leave these at their defaults):
-   - **What connections do you plan to use?**: Leave as **"Data API + Connection String"** (default)
-   - **Data API configuration**: Leave as **"Use public schema for Data API"** (default)
+### 1.3 Disable Email Confirmation (Recommended for Development)
 
-4. **Advanced Configuration** (you can leave this at default):
-   - **Postgres Type**: Leave as **"Postgres"** (default - recommended for production workloads)
+1. Navigate to **Authentication** → **Sign In / Providers**
+2. Click on **Email** provider
+3. **Turn OFF** the "Confirm email" toggle
+4. Click **"Save"**
 
-5. Click **"Create new project"** at the bottom right
-6. Wait ~2 minutes for your project to be provisioned
-
-### 1.3 Disable Email Confirmation
-
-To make development and testing easier, disable email confirmation for new signups:
-
-1. In your Supabase project dashboard, click on **"Authentication"** in the left sidebar
-2. Click on **"Sign In / Providers"** in the Authentication menu
-3. Find the **"Email"** provider and click on it
-4. Scroll down to find **"Confirm email"** toggle
-5. **Turn OFF** the "Confirm email" toggle
-6. Click **"Save"** at the bottom
-
-💡 **Why?** With email confirmation disabled, users can sign up and immediately log in without needing to verify their email. This is helpful for development and testing. For production deployments, you may want to re-enable this for security.
-
-### 1.4 Configure Frontend with Project Credentials
-
-Once your project is ready, you'll configure the frontend app with your Supabase credentials.
-
-#### Get your API keys from Supabase:
-
-1. In your Supabase project dashboard, click on **"Settings"** (gear icon in left sidebar)
-2. Click on **"API Keys"** in the settings menu
-3. If you see legacy keys (anon key starting with `eyJ...`), click **"Create New API Keys"** to generate modern publishable keys
-4. You'll need these two values:
-   - **Project URL** (under "Project URL" section, looks like `https://xxxxx.supabase.co`)
-   - **Publishable Key** (under "Publishable key" section, starts with `sb_publishable_...`)
-
-💡 **Note**: Supabase is moving from legacy "anon keys" to modern "publishable keys". Always use the publishable key (`sb_publishable_...`) for new projects.
-
-#### Configure the Frontend App
-
-1. **Open the project in VS Code:**
-   - Open VS Code
-   - Click `File` > `Open Folder`
-   - Navigate to the `Frontend_2025_Scouting` folder and click "Open"
-
-2. **Open the Integrated Terminal in VS Code:**
-   - Press `` Ctrl+` `` (Windows) or `` Cmd+` `` (Mac) to open the terminal
-   - Or go to `Terminal` > `New Terminal`
-   - Make sure you're in the `Frontend_2025_Scouting` directory
-
-3. **Copy the `.env.example` file to create your `.env` file:**
-
-   In the VS Code terminal, type:
-   ```bash
-   cp .env.example .env
-   ```
-   (On Windows Command Prompt, use: `copy .env.example .env`)
-
-4. **Open the new `.env` file in VS Code:**
-   - In the VS Code file explorer (left sidebar), you should now see a `.env` file
-   - Click on it to open it in the editor
-
-5. **Update these two values with your credentials from above:
-   ```env
-   PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
-   PUBLIC_SUPABASE_KEY=sb_publishable_...your_key_here
-   ```
-   Replace:
-   - `https://xxxxx.supabase.co` with your actual **Project URL**
-   - `sb_publishable_...your_key_here` with your actual **Publishable Key**
-
-6. **Save the `.env` file:**
-   - Press `Ctrl+S` (Windows) or `Cmd+S` (Mac)
-
-⚠️ **Important**: Never commit your `.env` file to GitHub. It's already in `.gitignore` to protect your credentials.
-
-⚠️ **Also Important**: This .env file should be shared with anyone else using the [FRONTEND_SETUP_GUIDE](Frontend_2025_Scouting\docs\FRONTEND_SETUP_GUIDE.md) in Step 4.
+💡 **Why?** Users can sign up and log in immediately without email verification. Re-enable for production if desired.
 
 ---
 
-## Step 2: Create the Database Schema
+## Step 2: Initialize Database Schema
+
+This is the core setup that creates all tables, functions, and security policies.
 
 ### 2.1 Open SQL Editor
 
-1. In your Supabase project dashboard, click **"SQL Editor"** in the left sidebar
-2. Click the **"New Query"** button
+1. In Supabase dashboard, click **"SQL Editor"** in left sidebar
+2. Click **"New query"** button (top right)
 
-### 2.2 Run the Schema Creation Script
+### 2.2 Run Schema Setup Scripts
 
-1. **In VS Code**, navigate to `Frontend_2025_Scouting/supabase_setup/2 - CREATE_CLEAN_SCHEMA.sql`
-2. **Open the file** and select all the contents (`Ctrl+A` on Windows, `Cmd+A` on Mac)
-3. **Copy the entire script** (`Ctrl+C` on Windows, `Cmd+C` on Mac)
-4. **In the Supabase SQL Editor**, paste the script (`Ctrl+V` or `Cmd+V`)
-5. Click **"Run"** (or press `Ctrl+Enter`)
-6. Wait for the execution to complete (~10-30 seconds)
+You'll run **6 sequential scripts** to set up your database. Each script is in the `Frontend_2025_Scouting/supabase_setup/` directory.
 
-### 2.3 Verify Schema Creation
+#### Script 1: Drop All Existing Schema (Clean Slate)
 
-You should see output showing:
+📁 **File:** `1 - DROP_ALL_SCHEMA.sql`
 
+**Purpose:** Removes any existing tables, functions, and policies for a fresh start.
+
+1. Open `1 - DROP_ALL_SCHEMA.sql` in VS Code
+2. Copy the entire contents
+3. Paste into Supabase SQL Editor
+4. Click **"Run"** (or press Ctrl+Enter)
+5. ✅ **Expected:** "Success. No rows returned"
+
+⚠️ **Warning:** This deletes all existing data! Only use for initial setup or complete reset.
+
+#### Script 2: Create Clean Schema
+
+📁 **File:** `2 - CREATE_CLEAN_SCHEMA.sql`
+
+**Purpose:** Creates all tables, views, functions, and Row Level Security (RLS) policies.
+
+**Creates:**
+- **8 Tables:** app_metadata, user_profiles, game_scoring_config, match_reports, pit_reports, robot_stats, user_team_stars, admin_team_stars
+- **2 Views:** robots_complete (leaderboard), admin_user_list
+- **14 Functions:** All database operations including team starring system
+- **RLS Policies:** Security rules for all tables
+
+1. Open `2 - CREATE_CLEAN_SCHEMA.sql` in VS Code
+2. Copy the entire contents
+3. Paste into Supabase SQL Editor
+4. Click **"Run"**
+5. ✅ **Expected:** Verification queries show all tables, views, and functions created
+
+**Verification Output:**
 ```
 Tables created:
+- admin_team_stars
 - app_metadata
 - game_scoring_config
 - match_reports
 - pit_reports
 - robot_stats
 - user_profiles
+- user_team_stars
 
 Views created:
-- reefscape_matches_view
-- user_team_view
+- admin_user_list
+- robots_complete
 
 Functions created:
-- assign_default_team
+- calculate_match_score
+- check_admin_star
 - check_schema_compatibility
+- check_user_star
 - create_user_profile
-- get_robot_stats
-- get_team_stats
+- get_admin_starred_teams
+- get_reefscape_scoring_config
+- get_user_starred_teams
 - is_user_admin
 - recalculate_team_stats
+- toggle_admin_star
+- toggle_user_star
+- trigger_calculate_match_score
 - trigger_recalculate_stats
-
-Triggers created:
-- trigger_auto_calculate_match_score (on match_reports)
-- trigger_auto_recalculate_stats (on match_reports)
-- trigger_assign_default_team (on user_profiles)
 ```
-
-If you see errors, check the troubleshooting section at the bottom.
 
 ---
 
-## Step 3: Create the Auth Trigger
+## Step 3: Configure Authentication
 
-The auth trigger automatically creates a user profile when someone signs up.
+### 3.1 Create Auth Trigger
 
-### 3.1 Run Auth Trigger Script
+📁 **File:** `3 - CREATE_AUTH_TRIGGER.sql`
 
-1. In the Supabase SQL Editor, click **"New Query"**
-2. **In VS Code**, open `Frontend_2025_Scouting/supabase_setup/3 - CREATE_AUTH_TRIGGER.sql`
-3. **Copy the entire script** (`Ctrl+A` then `Ctrl+C` on Windows, `Cmd+A` then `Cmd+C` on Mac)
-4. **In the Supabase SQL Editor**, paste the script and click **"Run"**
+**Purpose:** Automatically creates a user profile when someone signs up.
 
-### 3.2 Verify Trigger Created
-
-In the Supabase SQL Editor, run this query to verify the trigger was created:
-
-```sql
-SELECT trigger_name, event_object_table
-FROM information_schema.triggers
-WHERE trigger_name = 'on_auth_user_created';
-```
-
-You should see one row showing the `on_auth_user_created` trigger on event_object_table `users`.
-
----
-
-## Step 4: Initialize App Metadata
-
-### 4.1 Run Initial Configuration Script
-
-1. In the Supabase SQL Editor, click **"New Query"**
-2. **In VS Code**, open `Frontend_2025_Scouting/supabase_setup/4 - SET_TEST_COMPETITION.sql`
-3. **Copy the entire script** and paste into the Supabase SQL Editor
+1. Open `3 - CREATE_AUTH_TRIGGER.sql` in VS Code
+2. Copy the entire contents
+3. Paste into Supabase SQL Editor
 4. Click **"Run"**
+5. ✅ **Expected:** "Success. No rows returned"
 
-This script sets up:
-- Default competition: 'Test Competition'
-- Schema version: 1.0.0
-- Initializes the app_metadata table
+**What this does:**
+- When a user signs up, automatically creates a row in `user_profiles`
+- Initializes `is_admin: false` by default
+- Links to `auth.users` table
 
-### 4.2 Verify Configuration
+### 3.2 Set Active Competition
 
-In the Supabase SQL Editor, run this query to verify the configuration:
+📁 **File:** `4 - SET_TEST_COMPETITION.sql`
 
-```sql
-SELECT active_competition, schema_version, game_name, game_year
-FROM app_metadata;
-```
+**Purpose:** Configure the active competition and available competitions list.
 
-You should see:
-- `active_competition`: Test Competition
-- `schema_version`: 1.0.0
-- `game_name`: REEFSCAPE
-- `game_year`: 2025
-
----
-
-## Step 5: Create Your First Admin User
-
-### 5.1 Sign Up in the App
-
-1. **In the VS Code terminal**, start the app:
-   ```bash
-   npm start -- --tunnel --clear
+1. Open `4 - SET_TEST_COMPETITION.sql` in VS Code
+2. **Optional:** Edit the script to set your actual competition name
+   ```sql
+   active_competition = 'Test Competition',  -- Change to your event name
+   available_competitions = '["Test Competition", "East Bay Regional"]'::jsonb
    ```
-   💡 **Note**: `--tunnel` may or may not be needed depending on your local network configuration.  Try it both ways if you have trouble starting the app on your iPhone
-
-2. Follow the instructions in the terminal to open the app on your device or simulator
-3. Create a new account with your email
-4. Sign in with your new account
-
-### 5.2 Make Yourself Admin
-
-Option A - Use the SQL script (recommended):
-1. **In VS Code**, open `Frontend_2025_Scouting/supabase_setup/6 - GRANT_ADMIN_ACCESS.sql`
-2. Replace `your.email@example.com` with your actual email address
-3. Copy the script and run it in the Supabase SQL Editor
-
-Option B - Run this query directly in the Supabase SQL Editor (replace `your.email@example.com` with your actual email):
-
-```sql
-UPDATE user_profiles
-SET is_admin = true
-WHERE email = 'your.email@example.com';
-```
-
-### 5.3 Verify Admin Status
-
-1. In the VS Code terminal where Expo is running, press `r` to reload the app
-2. Sign in again - you should now have access to admin features
+3. Copy the entire contents
+4. Paste into Supabase SQL Editor
+5. Click **"Run"**
+6. ✅ **Expected:** Shows the updated metadata with your competition set
 
 ---
 
-## Step 6: Test the Database
+## Step 4: Load Test Data (Optional)
 
-### 6.1 Load Test Data (Optional)
+📁 **File:** `5 - LOAD_TEST_DATA.sql`
 
-To verify everything works, you can load sample data:
+**Purpose:** Populate database with sample teams and matches for testing.
 
-1. **In VS Code**, open `Frontend_2025_Scouting/supabase_setup/5 - LOAD_TEST_DATA.sql`
-2. **Copy the entire script** (`Ctrl+A` then `Ctrl+C` on Windows, `Cmd+A` then `Cmd+C` on Mac)
-3. **In the Supabase SQL Editor**, paste and run the script
-4. This will create 5 sample teams (589, 254, 1678, 118, 971) with match and pit data
+**Test Data Includes:**
+- 5 teams (589, 254, 1323, 971, 1678)
+- 3 matches per team
+- Pit scouting data for all teams
+- Calculated statistics
 
-### 6.2 Verify Data Loaded
+1. Open `5 - LOAD_TEST_DATA.sql` in VS Code
+2. Copy the entire contents
+3. Paste into Supabase SQL Editor
+4. Click **"Run"**
+5. ✅ **Expected:** Multiple "INSERT" success messages
 
-Check the leaderboard in the app - you should see 5 teams with statistics.
-
-Or in the Supabase SQL Editor, run this query:
-
-```sql
-SELECT team_number, matches_played, avg_algae_processed, avg_L1, avg_L2, avg_L3, avg_L4
-FROM robot_stats
-WHERE regional = 'Test Competition'
-ORDER BY total_score DESC
-LIMIT 5;
-```
+**Skip this step if you want to start with an empty database.**
 
 ---
 
-## Database Schema Overview
+## Step 5: Grant Admin Access
 
-### Tables
+📁 **File:** `6 - GRANT_ADMIN_ACCESS.sql`
 
-1. **app_metadata** - Application settings and competition configuration
-2. **game_scoring_config** - REEFSCAPE 2025 scoring rules and point values
-3. **match_reports** - Match scouting data (auto/tele scoring, climb, etc.)
-4. **pit_reports** - Pit scouting data (robot capabilities)
-5. **robot_stats** - Calculated statistics (auto-updated by trigger)
-6. **user_profiles** - User accounts and permissions
+**Purpose:** Grant admin privileges to specific users.
 
-### Views
+### 5.1 Sign Up First User
 
-1. **reefscape_matches_view** - Formatted match data for display
-2. **user_team_view** - User information with team assignments
+**You must create at least one user account before running this script:**
 
-### Key Features
+1. Open your frontend app (or navigate to your Supabase auth URL)
+2. Sign up with your email (the one you want to be admin)
+3. Note the email address you used
 
-- **Automatic stats calculation**: When you submit a match, `robot_stats` updates automatically
-- **Row Level Security (RLS)**: Data is secure with proper access controls
-- **Real-time updates**: Optional real-time subscriptions for live leaderboard
-- **Schema versioning**: Frontend checks compatibility before making changes
+### 5.2 Run Admin Grant Script
+
+1. Open `6 - GRANT_ADMIN_ACCESS.sql` in VS Code
+2. **Edit the email address** in the script:
+   ```sql
+   WHERE email IN (
+       'your-email@example.com',  -- ← Change this to your actual email
+       'mentor@example.com'       -- Add more admin emails here
+   );
+   ```
+3. Copy the entire contents
+4. Paste into Supabase SQL Editor
+5. Click **"Run"**
+6. ✅ **Expected:** Shows "Admin access granted" message with count
+
+**To add more admins later:**
+- Re-run this script with additional email addresses
+- Or manually update the `user_profiles` table:
+  ```sql
+  UPDATE user_profiles
+  SET is_admin = true
+  WHERE email = 'new-admin@example.com';
+  ```
+
+---
+
+## Step 6: Configure Frontend
+
+### 6.1 Get Supabase Credentials
+
+1. In Supabase dashboard, go to **Settings** → **API Keys**
+2. Copy these two values:
+   - **Project URL**: `https://xxxxx.supabase.co`
+   - **Publishable Key**: `sb_publishable_...`
+
+💡 **Note:** Use the modern "publishable key" (starts with `sb_publishable_`), not the legacy "anon key".
+
+### 6.2 Create .env File
+
+1. Open VS Code in the `Frontend_2025_Scouting` directory
+2. Open integrated terminal (`` Ctrl+` ``)
+3. Copy the example file:
+   ```bash
+   cp .env.example .env
+   ```
+   (On Windows Command Prompt: `copy .env.example .env`)
+
+4. Edit `.env` file with your credentials:
+   ```env
+   PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
+   PUBLIC_SUPABASE_KEY=sb_publishable_...your_key_here
+   ```
+
+5. **Save the file** (Ctrl+S)
+
+⚠️ **Security:** The `.env` file is in `.gitignore` and won't be committed. Share it securely with your team.
+
+---
+
+## Verification
+
+### Check Database Setup
+
+Run this query in SQL Editor to verify everything:
+
+```sql
+-- Check schema version
+SELECT schema_version, active_competition, available_competitions
+FROM app_metadata;
+
+-- Check tables exist (should show 8)
+SELECT COUNT(*) as table_count
+FROM information_schema.tables
+WHERE table_schema = 'public' AND table_type = 'BASE TABLE';
+
+-- Check functions exist (should show 14)
+SELECT COUNT(*) as function_count
+FROM information_schema.routines
+WHERE routine_schema = 'public';
+
+-- Check for admin users
+SELECT email, is_admin, created_at
+FROM user_profiles
+ORDER BY created_at;
+
+-- Check test data loaded (if you ran script 5)
+SELECT COUNT(*) as team_count FROM pit_reports;
+SELECT COUNT(*) as match_count FROM match_reports;
+SELECT COUNT(*) as stats_count FROM robot_stats;
+```
+
+**Expected Results:**
+- Schema version: `2.1.0`
+- 8 tables
+- 14 functions
+- At least 1 admin user
+- If test data loaded: 5 teams, 15 matches, 5 stat records
+
+### Test Frontend Connection
+
+1. Start the frontend app:
+   ```bash
+   cd Frontend_2025_Scouting
+   ./start_app.sh
+   ```
+
+2. Open the app (scan QR code or press `w` for web)
+
+3. **Test Authentication:**
+   - Click "Sign Up"
+   - Create a new account
+   - Should log in successfully without email verification
+
+4. **Test Database Connection:**
+   - Navigate to Leaderboard
+   - Should see teams listed (if you loaded test data)
+   - Try starring a team (star icon should persist)
+
+5. **Test Admin Features (if you're an admin):**
+   - Tap a star once → Yellow star (user favorite)
+   - Tap again → Blue star (admin flag)
+   - Tap again → Both stars removed
+   - Other users should see blue stars
+
+---
+
+## What Was Created
+
+### Database Tables (8)
+
+| Table | Purpose | Key Features |
+|-------|---------|--------------|
+| `app_metadata` | App configuration | Schema version, active competition, feature flags |
+| `user_profiles` | User accounts | Email, admin status, default competition |
+| `game_scoring_config` | Point values | Configurable scoring for REEFSCAPE game |
+| `match_reports` | Match scouting | Auto, tele, endgame data for each match |
+| `pit_reports` | Pit scouting | Robot capabilities (algae, climb, coral) |
+| `robot_stats` | Calculated stats | Auto-updated averages, ranking values |
+| `user_team_stars` | User favorites | Personal starred teams (yellow stars) |
+| `admin_team_stars` | Admin flags | Teams flagged by admins (blue stars, visible to all) |
+
+### Security Features
+
+**Row Level Security (RLS) enabled on all tables:**
+- Users can only view/edit their own data
+- Admins can modify admin-specific data
+- Public data (stats, robot info) visible to all authenticated users
+- Team stars properly isolated per user with admin override
+
+**Functions use SECURITY DEFINER:**
+- Safe execution with proper permissions
+- Prevents SQL injection
+- Validates admin status before privileged operations
+
+### Team Starring System
+
+**User Stars (Yellow):**
+- Each user can star any team
+- Persists across sessions
+- Only visible to that user
+- Synchronized across leaderboard and team detail pages
+
+**Admin Stars (Blue):**
+- Set by admins only
+- Visible to all users
+- Optional note field for why team is important
+- Displayed above user stars
+
+**How It Works:**
+- Regular user: Tap to toggle yellow star
+- Admin: 1st tap = yellow, 2nd tap = blue, 3rd tap = remove both
+- Stars sync across all pages in real-time
 
 ---
 
 ## Troubleshooting
 
-### Error: "Permission denied for schema public"
+### "Relation already exists" Error
 
-**Solution**: Make sure you're running the SQL as the project owner. Check your Supabase project settings to verify you're logged in with the correct account.
+**Solution:** You're trying to create tables that already exist.
+- Run script `1 - DROP_ALL_SCHEMA.sql` first to clean slate
+- Then run scripts 2-6 in order
 
-### Error: "relation already exists"
+### "Permission denied" on Function Creation
 
-**Solution**: The schema already exists. If you want to start fresh, see the "Reset Database" section below.
+**Solution:** Make sure you're using the project owner account.
+- Check you're logged into the correct Supabase organization
+- Owner account has full database permissions
 
-### Frontend shows "Schema version mismatch"
+### Frontend Can't Connect
 
-**Solution**: In the Supabase SQL Editor, update the schema version in app_metadata by running this query:
+**Check:**
+1. `.env` file exists in `Frontend_2025_Scouting/`
+2. `PUBLIC_SUPABASE_URL` matches your project URL exactly
+3. `PUBLIC_SUPABASE_KEY` is the publishable key (starts with `sb_publishable_`)
+4. Supabase project is not paused (free tier pauses after inactivity)
+5. Run test connection:
+   ```bash
+   cd Frontend_2025_Scouting/supabase_setup
+   node test-supabase-connection.js
+   ```
 
-```sql
-UPDATE app_metadata SET schema_version = '1.0.0' WHERE id = 1;
-```
+### Users Can't Sign Up
 
-### Connection test fails
+**Check:**
+1. Email confirmation is disabled (Step 1.3)
+2. Email provider is enabled: **Authentication** → **Sign In / Providers** → **Email** (enabled)
+3. Check for error in browser console (F12)
 
-**Solution**:
-1. **In VS Code**, open your `.env` file and verify it has the correct URL and publishable key
-2. Check that your Supabase project is active (not paused) in the Supabase dashboard
-3. Make sure you're using the **publishable key** (`sb_publishable_...`), not a secret key (`sb_secret_...`)
-4. If using a legacy project, ensure you created new API keys (Settings → API Keys → Create New API Keys)
-5. **In the VS Code terminal**, try running the connection test again: `node Frontend_2025_Scouting\supabase_setup\test-supabase-connection.js`
+### Admin Access Not Working
 
-### Auth trigger not working (users don't get profiles)
+**Check:**
+1. User signed up BEFORE running script 6
+2. Email in script 6 matches exactly (case-sensitive)
+3. Verify in SQL Editor:
+   ```sql
+   SELECT email, is_admin FROM user_profiles;
+   ```
+4. If `is_admin` is false, update manually:
+   ```sql
+   UPDATE user_profiles
+   SET is_admin = true
+   WHERE email = 'your-email@example.com';
+   ```
 
-**Solution**: In the Supabase SQL Editor, recreate the trigger:
+### Stars Not Persisting
 
-```sql
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-CREATE TRIGGER on_auth_user_created
-    AFTER INSERT ON auth.users
-    FOR EACH ROW
-    EXECUTE FUNCTION create_user_profile();
-```
+**Check:**
+1. User is logged in (check AuthContext)
+2. Active competition is set in app_metadata
+3. No console errors when clicking star
+4. Verify tables exist:
+   ```sql
+   SELECT * FROM user_team_stars;
+   SELECT * FROM admin_team_stars;
+   ```
+
+### RLS Policy Errors
+
+**Symptom:** "Row level security policy violation" errors
+
+**Solution:**
+1. Make sure user is authenticated (signed in)
+2. Verify RLS policies were created:
+   ```sql
+   SELECT schemaname, tablename, policyname
+   FROM pg_policies
+   WHERE schemaname = 'public'
+   ORDER BY tablename, policyname;
+   ```
+3. If missing, re-run script `2 - CREATE_CLEAN_SCHEMA.sql`
 
 ---
 
-## Resetting the Database
+## Maintenance
 
-If you need to start completely fresh:
+### Backup Database
 
-### Option 1: Drop and Recreate (Quick)
+**Option 1: Supabase Dashboard**
+1. Go to **Database** → **Backups**
+2. Click **"Download backup"**
 
-1. **In VS Code**, open `supabase_setup/1 - DROP_ALL_SCHEMA.sql`, copy the contents
-2. **In the Supabase SQL Editor**, paste and run the script
-3. Repeat the process with `2 - CREATE_CLEAN_SCHEMA.sql`
-4. Repeat the process with `3 - CREATE_AUTH_TRIGGER.sql`
-5. Repeat the process with `4 - SET_TEST_COMPETITION.sql`
+**Option 2: SQL Export**
+```sql
+-- Export all data
+COPY (SELECT * FROM match_reports) TO '/tmp/match_reports.csv' CSV HEADER;
+COPY (SELECT * FROM pit_reports) TO '/tmp/pit_reports.csv' CSV HEADER;
+```
 
-### Option 2: Create New Project (Safest)
+### Update Schema Version
 
-1. Create a new Supabase project (follow Step 1 again)
-2. Follow all the setup steps with the new project
-3. Update your `.env` file with the new credentials
-4. Delete the old project when you're ready
+When making schema changes, update the version:
 
----
+```sql
+UPDATE app_metadata
+SET schema_version = '2.2.0',
+    schema_updated_at = NOW()
+WHERE id = 1;
+```
 
-## Security Best Practices
+### Reset to Factory State
 
-### ✅ DO:
-- Keep your `.env` file private (it's in `.gitignore`)
-- Use the **publishable key** (`sb_publishable_...`) in the frontend (not the service role key)
-- Enable Row Level Security (RLS) on all tables (already done by the setup script)
-- Rotate your database password periodically
-- Give admin privileges only to trusted team members
+To completely reset and start over:
 
-### ❌ DON'T:
-- Commit your `.env` file to GitHub
-- Share your service role key publicly
-- Disable RLS policies
-- Use the same password for everything
+```sql
+-- Run scripts in order:
+-- 1 - DROP_ALL_SCHEMA.sql
+-- 2 - CREATE_CLEAN_SCHEMA.sql
+-- 3 - CREATE_AUTH_TRIGGER.sql
+-- 4 - SET_TEST_COMPETITION.sql
+-- (Optional) 5 - LOAD_TEST_DATA.sql
+-- 6 - GRANT_ADMIN_ACCESS.sql (with your email)
+```
+
+### Monitor Database Usage
+
+Free tier limits:
+- **500 MB** database size
+- **2 GB** bandwidth per month
+- **50,000** monthly active users
+
+Check usage: **Settings** → **Usage**
 
 ---
 
 ## Next Steps
 
-After completing this setup:
+### 1. Customize for Your Competition
 
-1. ✅ Test match scouting submission
-2. ✅ Test pit scouting submission
-3. ✅ Verify leaderboard displays correctly
-4. ✅ Test realtime updates (if enabled)
-5. ✅ Create additional admin users for your team
-6. ✅ Configure your competition settings in app_metadata
-
----
-
-## Additional Resources
-
-- **Supabase Documentation**: https://supabase.com/docs
-- **FRC 589 Scouting App Docs**: See other files in `docs/` folder
-- **Database Schema Reference**: See `supabase_setup/SCHEMA_REFERENCE.md`
-
----
-
-## Getting Help
-
-If you run into issues:
-
-1. Check the troubleshooting section above
-2. Review your Supabase project logs (Dashboard → Logs)
-3. **In VS Code**, check the terminal for error messages from the connection test or Expo
-4. Use **Claude Code** in VS Code (`` Ctrl+` `` or `` Cmd+` `` to open terminal, type `claude`) to ask questions
-5. Ask your team's software lead or mentor
-
----
-
-## Appendix: Manual Verification Queries
-
-In the Supabase SQL Editor, you can run these queries to verify everything is set up correctly:
+Edit `4 - SET_TEST_COMPETITION.sql` to set your regional:
 
 ```sql
--- Check table count (should be 5)
-SELECT COUNT(*) FROM information_schema.tables
-WHERE table_schema = 'public' AND table_type = 'BASE TABLE';
-
--- Check view count (should be 2)
-SELECT COUNT(*) FROM information_schema.views
-WHERE table_schema = 'public';
-
--- Check function count (should be 5)
-SELECT COUNT(DISTINCT routine_name) FROM information_schema.routines
-WHERE routine_schema = 'public';
-
--- Check RLS enabled on all tables
-SELECT tablename, rowsecurity FROM pg_tables
-WHERE schemaname = 'public'
-ORDER BY tablename;
--- All should show 'true'
-
--- Check app_metadata initialized
-SELECT * FROM app_metadata;
--- Should have 1 row with id=1
-
--- Check for any data
-SELECT
-    (SELECT COUNT(*) FROM match_reports) as matches,
-    (SELECT COUNT(*) FROM pit_reports) as pit_reports,
-    (SELECT COUNT(*) FROM robot_stats) as stats,
-    (SELECT COUNT(*) FROM user_profiles) as users;
+UPDATE app_metadata SET
+    active_competition = 'East Bay Regional',
+    available_competitions = '["East Bay Regional", "Sacramento Regional"]'::jsonb
+WHERE id = 1;
 ```
+
+### 2. Import Team Data
+
+Use The Blue Alliance (TBA) API to import teams:
+
+```typescript
+// Frontend app has TBA integration
+// Navigate to admin panel → Import from TBA
+```
+
+### 3. Configure Scoring Values
+
+If game rules change, update scoring in the app:
+
+```sql
+UPDATE game_scoring_config SET
+    auto_coral_l1_points = 4,  -- Updated point value
+    teleop_coral_l2_points = 4
+WHERE id = 1;
+```
+
+### 4. Set Up Realtime (Optional)
+
+For live leaderboard updates:
+
+1. Go to **Database** → **Replication**
+2. Enable replication for:
+   - `robot_stats`
+   - `match_reports`
+   - `user_team_stars`
+   - `admin_team_stars`
+
+### 5. Production Checklist
+
+Before competition:
+
+- [ ] Enable email confirmation (if desired)
+- [ ] Verify all team leads have admin access
+- [ ] Load actual team roster for your regional
+- [ ] Set correct active competition
+- [ ] Test on multiple devices
+- [ ] Backup empty database
+- [ ] Share `.env` file securely with team
+
+---
+
+## Support
+
+### Documentation
+- [Supabase Docs](https://supabase.com/docs)
+- [Frontend Setup Guide](./FRONTEND_SETUP_GUIDE.md)
+- [App Quick Reference](../README.md)
+
+### Team Resources
+- Ask your team lead or mentor
+- Check GitHub issues
+- Team Discord/Slack
+
+### Supabase Support
+- [Supabase Community](https://github.com/supabase/supabase/discussions)
+- [Supabase Discord](https://discord.supabase.com/)
 
 ---
 
 **Setup Complete! 🎉**
 
-Your Supabase database is now ready for scouting. Start the app and begin collecting data!
+Your database is ready for the 2025 FRC scouting season. Happy scouting!
+
+---
+
+*Last Updated: 2025-11-29*
+*Schema Version: 2.1.0*
+*Frontend Version: 2.1.0*

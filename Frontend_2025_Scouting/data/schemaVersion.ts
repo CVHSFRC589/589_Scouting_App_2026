@@ -4,7 +4,7 @@
  */
 
 // Expected database schema version
-export const EXPECTED_SCHEMA_VERSION = '2.0.0';
+export const EXPECTED_SCHEMA_VERSION = '2.1.0';
 
 // Minimum compatible schema version
 export const MIN_SCHEMA_VERSION = '2.0.0';

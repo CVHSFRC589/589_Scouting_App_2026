@@ -2,12 +2,12 @@
 
 A comprehensive mobile scouting application for FIRST Robotics Competition (FRC) Team 589, built for the 2025 REEFSCAPE game season.
 
-![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android-lightgrey.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 ---
-Ready to get up and running? Dive into the [FRONTEND_SETUP_GUIDE](Frontend_2025_Scouting\docs\FRONTEND_SETUP_GUIDE.md)!
+Ready to get up and running? Dive into the [Frontend Setup Guide](Frontend_2025_Scouting/docs/FRONTEND_SETUP_GUIDE.md)!
 ## 📋 Table of Contents
 
 - [Overview](#overview)
@@ -29,16 +29,16 @@ The FRC 589 Scouting App is a mobile-first application designed to streamline th
 
 ### Purpose
 
-- **Data Collection**: Scouts collect real-time data on robot performance during matches and pit inspections
+- **Data Collection**: Scouts collect real-time data on robot performance during pit inspections and matches
 - **Strategic Analysis**: Analyze team statistics, rankings, and capabilities to inform strategy
 - **Alliance Selection**: Make informed decisions during alliance selection based on comprehensive data
 - **Competition Management**: Administrators manage competitions, users, and data across multiple regionals
 
 ### Target Users
 
-- **Scouts**: Team members collecting match and pit data on tablets/phones
+- **Scouts**: Team members collecting pit and match data on tablets/phones
 - **Strategy Team**: Analyzing data for match strategy and alliance selection
-- **Administrators**: Managing competitions, users, and application configuration
+- **Scouting Leads**: Managing competitions, users, and application configuration
 
 ---
 
@@ -46,18 +46,18 @@ The FRC 589 Scouting App is a mobile-first application designed to streamline th
 
 ### Core Functionality
 
+- ✅ **Pit Scouting**
+  - Document robot capabilities and specifications
+  - Vision system and drivetrain information
+  - Intake and scoring capabilities
+  - Climb abilities and strategic notes
+
 - ✅ **Match Scouting**
   - Track autonomous, teleoperated, and endgame performance
   - Score coral placement (L1-L4 levels)
   - Track algae removal, processing, and scoring
   - Record climb performance and endgame actions
   - Driver ratings and defensive play tracking
-
-- ✅ **Pit Scouting**
-  - Document robot capabilities and specifications
-  - Vision system and drivetrain information
-  - Intake and scoring capabilities
-  - Climb abilities and strategic notes
 
 - ✅ **Real-time Statistics**
   - Auto-calculated team averages and rankings
@@ -293,7 +293,7 @@ The application follows a **client-server architecture** with a mobile frontend 
 
 ## 🗄️ Database Schema
 
-### Schema Version: 2.0.0
+### Schema Version: 2.1.0
 
 The database uses **PostgreSQL 15+** via Supabase with Row Level Security enabled.
 
@@ -470,72 +470,66 @@ RLS policies control data access:
 
 ## 🚀 Getting Started
 
-### Prerequisites
+### New to the Project?
 
-- **Node.js** 18+ ([Download](https://nodejs.org/))
-- **npm** 9+ (comes with Node.js)
-- **Git** ([Download](https://git-scm.com/))
-- **Expo Go** app on iOS/Android ([App Store](https://apps.apple.com/app/expo-go/id982107779) | [Play Store](https://play.google.com/store/apps/details?id=host.exp.exponent))
-- **Supabase account** ([Sign up free](https://supabase.com/))
+**📖 Complete Setup Guide:** See [Frontend Setup Guide](Frontend_2025_Scouting/docs/FRONTEND_SETUP_GUIDE.md) for detailed installation instructions including:
+- Installing Node.js, Git, and development tools
+- Setting up iOS Simulator or Android Emulator
+- Configuring Expo Go on your phone
+- Database setup and configuration
+- Troubleshooting common issues
 
-### Installation
+### Quick Start (For Returning Developers)
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/CVHSFRC589/589_Scouting_App_2026.git
-   cd 589_Scouting_App_2026/Frontend_2025_Scouting
-   ```
+**Assumes you already have:**
+- ✅ Node.js 20+ installed
+- ✅ Git installed
+- ✅ Repository cloned
+- ✅ Dependencies installed (`npm install` already run)
+- ✅ `.env` file configured with Supabase credentials
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+**Start the app:**
 
-3. **Set up environment variables**
-   ```bash
-   cp .env.example .env
-   ```
+```bash
+cd Frontend_2025_Scouting
+./start_app.sh
+```
 
-   Edit `.env` and add your Supabase credentials:
+The startup script will:
+- ✓ Check your development environment
+- ✓ Verify dependencies are installed
+- ✓ Confirm `.env` configuration
+- ✓ Start the Expo development server
 
-   **Note:** Get a copy of the .env file with this information from your Team lead
+**Options:**
+```bash
+./start_app.sh --tunnel    # Use tunnel mode for network issues
+./start_app.sh --clear     # Clear cache before starting
+./start_app.sh --help      # Show all options
+```
 
-   ```env
-   PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-   PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-   ```
+**Open the app:**
+- **Phone**: Scan the QR code with Expo Go ([iOS](https://apps.apple.com/app/expo-go/id982107779) | [Android](https://play.google.com/store/apps/details?id=host.exp.exponent))
+- **Simulator/Emulator**: Press `i` for iOS or `a` for Android
+- **Web Browser**: Press `w` for web version
 
-4. **Start the development server**
-   ```bash
-   npm start
-   ```
+**First Time?**
+1. Sign up with your email
+2. Ask your team lead for admin access (if needed)
+3. Start scouting!
 
-5. **Run on device**
-   - Scan the QR code with Expo Go (iOS) or the Expo Go app (Android)
-   - Or press `a` for Android emulator, `i` for iOS simulator
-
-### First Login
-
-1. Create an account using the signup screen
-2. Log in and start scouting!
+**Need the .env file?** Contact your team lead for Supabase credentials.
 
 ---
 
 ## 📚 Documentation
 
 ### Setup Guides
-- [Supabase Setup Guide](Frontend_2025_Scouting/docs/SUPABASE_SETUP_GUIDE.md) - Complete database setup instructions
-- [SQL Audit Report](Frontend_2025_Scouting/supabase_setup/AUDIT_REPORT.md) - SQL scripts documentation
-- [Frontend Audit Report](Frontend_2025_Scouting/FRONTEND_AUDIT_REPORT.md) - Code refactoring details
-
-### Architecture Documentation
-- [Database Functions Audit](Docs/DATABASE_FUNCTIONS_AUDIT.md) - Function documentation
-- [Database Triggers Explained](Docs/DATABASE_TRIGGERS_EXPLAINED.md) - Trigger behavior
-- [Upload Queue System](Docs/UPLOAD_QUEUE_SYSTEM.md) - Offline submission design
-- [Schema Versioning Guide](Docs/SCHEMA_VERSIONING_GUIDE.md) - Version management
-
-### Future Development
-- [Ideas and Roadmap](Docs/IDEAS.md) - Planned features and enhancements
+- **[Frontend Setup Guide](Frontend_2025_Scouting/docs/FRONTEND_SETUP_GUIDE.md)** ⭐ - Complete installation and setup instructions
+- **[Supabase Setup Guide](Frontend_2025_Scouting/docs/SUPABASE_SETUP_GUIDE.md)** - Database setup and initialization
+- [iOS Simulator Setup](Frontend_2025_Scouting/docs/IOS_SIMULATOR_GUIDE.md) - Setting up iOS Simulator on Mac
+- [Android Emulator Setup](Frontend_2025_Scouting/docs/ANDROID_EMULATOR_GUIDE.md) - Setting up Android Emulator
+- [Physical Device Setup](Frontend_2025_Scouting/docs/PHYSICAL_DEVICE_GUIDE.md) - Running on your phone/tablet
 
 ### External Resources
 
@@ -604,8 +598,8 @@ RLS policies control data access:
 
 ### Branching Strategy
 
-- `main` - Production-ready code
-- `version2` - Current development branch (v2.0.0)
+- `main` - Current development branch (v2.1.0)
+- `version2` - Used for major refactoring and removal of node.js backend (archived)
 - `feature/*` - New features
 - `bugfix/*` - Bug fixes
 - `docs/*` - Documentation updates
@@ -614,15 +608,15 @@ RLS policies control data access:
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.
 
 ---
 
 ## 🏆 Credits
 
-**Developed by:** FRC Team 589 - Falcons
+**Developed by:** FRC Team 589 - Falkons
 **Season:** 2025 REEFSCAPE
-**Organization:** Casa Verde High School
+**Organization:** Cresenta Valley High School
 
 ### Special Thanks
 
@@ -645,7 +639,15 @@ For questions, issues, or contributions:
 
 ## 🔄 Version History
 
-### Version 2.0.0 (Current - November 2025)
+### Version 2.1.0 (Current - November 2025)
+- ✅ **Team Starring System**: User-specific favorites (yellow stars) and admin flags (blue stars)
+- ✅ **Persistent Stars**: Stars sync across leaderboard and all team detail pages
+- ✅ **Admin Star Features**: Double-tap to set blue stars visible to all users
+- ✅ **Database Integration**: Star tables and functions added to core schema
+- ✅ **Optimized Setup**: Streamlined Supabase initialization to 6 sequential scripts
+- ✅ **Enhanced Documentation**: Completely updated setup guides with verification steps
+
+### Version 2.0.0 (November 2025)
 - ✅ Complete refactoring to use database-driven competition names
 - ✅ Removed hardcoded competition codes
 - ✅ Added CompetitionContext for dynamic competition switching

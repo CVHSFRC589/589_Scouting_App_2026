@@ -2,25 +2,27 @@
 -- CLEAN SLATE SCHEMA CREATION SCRIPT
 -- ============================================================================
 -- Purpose: Create the entire FRC 589 Scouting App database schema from scratch
--- Version: 2.0.0
--- Date: 2025-11-09
+-- Version: 2.1.0
+-- Date: 2025-11-29
 --
 -- This script creates a minimal, clean schema with no legacy components.
 -- Use this to set up a new Supabase project or rebuild from scratch.
 --
--- TABLES (6):
+-- TABLES (8):
 --   - app_metadata: Application configuration
 --   - user_profiles: User accounts and permissions
 --   - game_scoring_config: REEFSCAPE scoring point values (admin-configurable)
 --   - match_reports: Match scouting data
 --   - pit_reports: Pit scouting data (robot capabilities)
 --   - robot_stats: Calculated statistics (auto-updated by trigger)
+--   - user_team_stars: User-specific team favorites (yellow stars)
+--   - admin_team_stars: Admin-flagged teams (blue stars, visible to all)
 --
 -- VIEWS (2):
 --   - robots_complete: Leaderboard view (robot_stats + pit_reports)
 --   - admin_user_list: Admin dashboard view
 --
--- FUNCTIONS (8):
+-- FUNCTIONS (14):
 --   - get_reefscape_scoring_config: Returns scoring point values
 --   - calculate_match_score: Calculates match score from game elements
 --   - trigger_calculate_match_score: Auto-calculate match score on insert/update
@@ -29,6 +31,12 @@
 --   - create_user_profile: Creates profile on user signup
 --   - is_user_admin: Admin permission check for RLS
 --   - check_schema_compatibility: Frontend version compatibility check
+--   - toggle_user_star: Toggle user's personal star
+--   - toggle_admin_star: Toggle admin star (admin only)
+--   - get_user_starred_teams: Get user's starred teams list
+--   - get_admin_starred_teams: Get admin-starred teams list
+--   - check_user_star: Check if user starred a specific team
+--   - check_admin_star: Check if team has admin star
 -- ============================================================================
 
 BEGIN;
@@ -48,7 +56,7 @@ CREATE TABLE IF NOT EXISTS app_metadata (
     game_year INTEGER NOT NULL DEFAULT 2025,
 
     -- Version management
-    schema_version TEXT NOT NULL DEFAULT '2.0.0',
+    schema_version TEXT NOT NULL DEFAULT '2.1.0',
     min_frontend_version TEXT NOT NULL DEFAULT '2.0.0',
     min_backend_version TEXT NOT NULL DEFAULT '2.0.0',
 
@@ -923,6 +931,315 @@ INSERT INTO game_scoring_config (
     3                  -- LEAVE bonus (AUTO)
 )
 ON CONFLICT (id) DO NOTHING;
+
+-- ============================================================================
+-- TABLE 7: user_team_stars
+-- ============================================================================
+-- Purpose: Store user-specific team stars (yellow stars)
+-- Each user can star any team, persists across sessions
+
+CREATE TABLE IF NOT EXISTS user_team_stars (
+    id BIGSERIAL PRIMARY KEY,
+
+    -- User reference
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+
+    -- Team identification
+    team_number INTEGER NOT NULL,
+    regional VARCHAR NOT NULL,
+
+    -- Timestamps
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+
+    -- Ensure one star per user per team per regional
+    CONSTRAINT unique_user_team_star UNIQUE (user_id, team_number, regional)
+);
+
+COMMENT ON TABLE user_team_stars IS 'User-specific team stars (yellow stars) - persistent across sessions';
+COMMENT ON COLUMN user_team_stars.user_id IS 'User who starred this team';
+COMMENT ON COLUMN user_team_stars.team_number IS 'FRC team number';
+COMMENT ON COLUMN user_team_stars.regional IS 'Competition/regional identifier';
+
+-- Index for faster lookups
+CREATE INDEX IF NOT EXISTS idx_user_team_stars_user ON user_team_stars(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_team_stars_team ON user_team_stars(team_number, regional);
+
+-- Enable RLS
+ALTER TABLE user_team_stars ENABLE ROW LEVEL SECURITY;
+
+-- User stars: Users can read and modify their own stars
+CREATE POLICY "Users can view their own stars"
+    ON user_team_stars FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can create their own stars"
+    ON user_team_stars FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own stars"
+    ON user_team_stars FOR DELETE
+    USING (auth.uid() = user_id);
+
+-- ============================================================================
+-- TABLE 8: admin_team_stars
+-- ============================================================================
+-- Purpose: Store admin-flagged teams (blue stars)
+-- Visible to all users, can only be set by admins
+
+CREATE TABLE IF NOT EXISTS admin_team_stars (
+    id BIGSERIAL PRIMARY KEY,
+
+    -- Team identification
+    team_number INTEGER NOT NULL,
+    regional VARCHAR NOT NULL,
+
+    -- Admin who created this star
+    created_by UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+
+    -- Optional note about why this team is starred
+    note TEXT,
+
+    -- Timestamps
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+
+    -- Ensure one admin star per team per regional
+    CONSTRAINT unique_admin_team_star UNIQUE (team_number, regional)
+);
+
+COMMENT ON TABLE admin_team_stars IS 'Admin-flagged teams (blue stars) - visible to all users';
+COMMENT ON COLUMN admin_team_stars.team_number IS 'FRC team number';
+COMMENT ON COLUMN admin_team_stars.regional IS 'Competition/regional identifier';
+COMMENT ON COLUMN admin_team_stars.created_by IS 'Admin user who starred this team';
+COMMENT ON COLUMN admin_team_stars.note IS 'Optional note about why this team is important';
+
+-- Index for faster lookups
+CREATE INDEX IF NOT EXISTS idx_admin_team_stars_team ON admin_team_stars(team_number, regional);
+CREATE INDEX IF NOT EXISTS idx_admin_team_stars_creator ON admin_team_stars(created_by);
+
+-- Enable RLS
+ALTER TABLE admin_team_stars ENABLE ROW LEVEL SECURITY;
+
+-- Admin stars: Everyone can view, only admins can modify
+CREATE POLICY "Everyone can view admin stars"
+    ON admin_team_stars FOR SELECT
+    USING (true);
+
+CREATE POLICY "Only admins can create admin stars"
+    ON admin_team_stars FOR INSERT
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM user_profiles
+            WHERE id = auth.uid() AND is_admin = true
+        )
+    );
+
+CREATE POLICY "Only admins can delete admin stars"
+    ON admin_team_stars FOR DELETE
+    USING (
+        EXISTS (
+            SELECT 1 FROM user_profiles
+            WHERE id = auth.uid() AND is_admin = true
+        )
+    );
+
+-- ============================================================================
+-- FUNCTION 9: toggle_user_star
+-- ============================================================================
+-- Purpose: Toggle a user's personal star for a team
+-- Returns: true if star added, false if star removed
+
+CREATE OR REPLACE FUNCTION toggle_user_star(
+    p_team_number INTEGER,
+    p_regional VARCHAR
+)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_exists BOOLEAN;
+BEGIN
+    -- Check if star already exists
+    SELECT EXISTS (
+        SELECT 1 FROM user_team_stars
+        WHERE user_id = auth.uid()
+          AND team_number = p_team_number
+          AND regional = p_regional
+    ) INTO v_exists;
+
+    IF v_exists THEN
+        -- Remove star
+        DELETE FROM user_team_stars
+        WHERE user_id = auth.uid()
+          AND team_number = p_team_number
+          AND regional = p_regional;
+        RETURN false;
+    ELSE
+        -- Add star
+        INSERT INTO user_team_stars (user_id, team_number, regional)
+        VALUES (auth.uid(), p_team_number, p_regional);
+        RETURN true;
+    END IF;
+END;
+$$;
+
+COMMENT ON FUNCTION toggle_user_star IS 'Toggle user star - returns true if added, false if removed';
+
+-- ============================================================================
+-- FUNCTION 10: toggle_admin_star
+-- ============================================================================
+-- Purpose: Toggle an admin star for a team (admin only)
+-- Returns: true if star added, false if star removed
+
+CREATE OR REPLACE FUNCTION toggle_admin_star(
+    p_team_number INTEGER,
+    p_regional VARCHAR,
+    p_note TEXT DEFAULT NULL
+)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_exists BOOLEAN;
+    v_is_admin BOOLEAN;
+BEGIN
+    -- Check if user is admin
+    SELECT is_admin INTO v_is_admin
+    FROM user_profiles
+    WHERE id = auth.uid();
+
+    IF NOT v_is_admin THEN
+        RAISE EXCEPTION 'Only admins can toggle admin stars';
+    END IF;
+
+    -- Check if admin star already exists
+    SELECT EXISTS (
+        SELECT 1 FROM admin_team_stars
+        WHERE team_number = p_team_number
+          AND regional = p_regional
+    ) INTO v_exists;
+
+    IF v_exists THEN
+        -- Remove admin star
+        DELETE FROM admin_team_stars
+        WHERE team_number = p_team_number
+          AND regional = p_regional;
+        RETURN false;
+    ELSE
+        -- Add admin star
+        INSERT INTO admin_team_stars (team_number, regional, created_by, note)
+        VALUES (p_team_number, p_regional, auth.uid(), p_note);
+        RETURN true;
+    END IF;
+END;
+$$;
+
+COMMENT ON FUNCTION toggle_admin_star IS 'Toggle admin star - returns true if added, false if removed (admin only)';
+
+-- ============================================================================
+-- FUNCTION 11: get_user_starred_teams
+-- ============================================================================
+-- Purpose: Get list of teams starred by current user for a regional
+-- Returns: Array of team numbers
+
+CREATE OR REPLACE FUNCTION get_user_starred_teams(
+    p_regional VARCHAR
+)
+RETURNS INTEGER[]
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    RETURN ARRAY(
+        SELECT team_number
+        FROM user_team_stars
+        WHERE user_id = auth.uid()
+          AND regional = p_regional
+        ORDER BY team_number
+    );
+END;
+$$;
+
+COMMENT ON FUNCTION get_user_starred_teams IS 'Get array of team numbers starred by current user';
+
+-- ============================================================================
+-- FUNCTION 12: get_admin_starred_teams
+-- ============================================================================
+-- Purpose: Get list of admin-starred teams for a regional
+-- Returns: Array of team numbers
+
+CREATE OR REPLACE FUNCTION get_admin_starred_teams(
+    p_regional VARCHAR
+)
+RETURNS INTEGER[]
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    RETURN ARRAY(
+        SELECT team_number
+        FROM admin_team_stars
+        WHERE regional = p_regional
+        ORDER BY team_number
+    );
+END;
+$$;
+
+COMMENT ON FUNCTION get_admin_starred_teams IS 'Get array of admin-starred team numbers (visible to all)';
+
+-- ============================================================================
+-- FUNCTION 13: check_user_star
+-- ============================================================================
+-- Purpose: Check if current user has starred a specific team
+-- Returns: Boolean
+
+CREATE OR REPLACE FUNCTION check_user_star(
+    p_team_number INTEGER,
+    p_regional VARCHAR
+)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1 FROM user_team_stars
+        WHERE user_id = auth.uid()
+          AND team_number = p_team_number
+          AND regional = p_regional
+    );
+END;
+$$;
+
+COMMENT ON FUNCTION check_user_star IS 'Check if current user has starred a team';
+
+-- ============================================================================
+-- FUNCTION 14: check_admin_star
+-- ============================================================================
+-- Purpose: Check if a team has an admin star
+-- Returns: Boolean
+
+CREATE OR REPLACE FUNCTION check_admin_star(
+    p_team_number INTEGER,
+    p_regional VARCHAR
+)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1 FROM admin_team_stars
+        WHERE team_number = p_team_number
+          AND regional = p_regional
+    );
+END;
+$$;
+
+COMMENT ON FUNCTION check_admin_star IS 'Check if a team has an admin star';
 
 COMMIT;
 

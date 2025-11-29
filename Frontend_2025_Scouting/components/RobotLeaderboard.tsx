@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import StatsAccordion from './StatsAccordion'; // Import the previously created accordion
+import { supabaseService } from '../data/supabaseService';
+import { useCompetition } from '../contexts/CompetitionContext';
 
 interface LeaderboardProps {
   sortedStats: RobotStats[];
@@ -17,6 +19,37 @@ const LeaderboardView: React.FC<LeaderboardProps> = ({
   error,
   sortField = "Rank"
 }) => {
+  const { activeCompetition } = useCompetition();
+  const [userStarredTeams, setUserStarredTeams] = useState<number[]>([]);
+  const [adminStarredTeams, setAdminStarredTeams] = useState<number[]>([]);
+  const [loadingStars, setLoadingStars] = useState(true);
+
+  // Load starred teams when component mounts or competition changes
+  useEffect(() => {
+    loadStarredTeams();
+  }, [activeCompetition]);
+
+  const loadStarredTeams = async () => {
+    if (!activeCompetition) {
+      setLoadingStars(false);
+      return;
+    }
+
+    try {
+      setLoadingStars(true);
+      const [userStars, adminStars] = await Promise.all([
+        supabaseService.getUserStarredTeams(activeCompetition),
+        supabaseService.getAdminStarredTeams(activeCompetition)
+      ]);
+
+      setUserStarredTeams(userStars);
+      setAdminStarredTeams(adminStars);
+    } catch (error) {
+      console.error('Error loading starred teams:', error);
+    } finally {
+      setLoadingStars(false);
+    }
+  };
   // If not meant to be shown, return null
   if (!showLeaderboard) {
     return null;
@@ -54,21 +87,25 @@ const LeaderboardView: React.FC<LeaderboardProps> = ({
     <View style={styles.container}>
       {/* <Text style={styles.title}>Robot Performance Leaderboard</Text> */}
       <ScrollView style={styles.scrollView}>
-        {sortedStats.map((robotStat, index) => (
-          <View key={index} style={styles.rankContainer}>
+        {sortedStats.map((robotStat, index) => {
+          const isUserStarred = userStarredTeams.includes(robotStat.team_num);
+          const isAdminStarred = adminStarredTeams.includes(robotStat.team_num);
 
-            <View style={styles.accordionContainer}>
-            {/* <View style={styles.rankBadge}> */}
-              {/* <Text style={styles.rankText}>#{index + 1}</Text> */}
-            {/* </View> */}
-              <StatsAccordion
-                stats={robotStat}
-                title={` ${robotStat.team_num}`}
-                sortField={sortField}
-              />
+          return (
+            <View key={index} style={styles.rankContainer}>
+              <View style={styles.accordionContainer}>
+                <StatsAccordion
+                  stats={robotStat}
+                  title={` ${robotStat.team_num}`}
+                  sortField={sortField}
+                  userStarred={isUserStarred}
+                  adminStarred={isAdminStarred}
+                  onStarChange={loadStarredTeams}
+                />
+              </View>
             </View>
-          </View>
-        ))}
+          );
+        })}
       </ScrollView>
     </View>
   );

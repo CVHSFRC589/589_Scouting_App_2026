@@ -5,7 +5,7 @@ module.exports = {
   expo: {
     name: "589-Scouting-App-2025",
     slug: "589-scouting-app-2025",
-    version: "2.0.0",
+    version: "2.1.0",
     orientation: "portrait",
     icon: "./assets/images/icon.png",
     scheme: "myapp",
