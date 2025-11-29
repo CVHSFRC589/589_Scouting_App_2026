@@ -1057,13 +1057,14 @@ CREATE OR REPLACE FUNCTION toggle_user_star(
 RETURNS BOOLEAN
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = ''
 AS $$
 DECLARE
     v_exists BOOLEAN;
 BEGIN
     -- Check if star already exists
     SELECT EXISTS (
-        SELECT 1 FROM user_team_stars
+        SELECT 1 FROM public.user_team_stars
         WHERE user_id = auth.uid()
           AND team_number = p_team_number
           AND regional = p_regional
@@ -1071,14 +1072,14 @@ BEGIN
 
     IF v_exists THEN
         -- Remove star
-        DELETE FROM user_team_stars
+        DELETE FROM public.user_team_stars
         WHERE user_id = auth.uid()
           AND team_number = p_team_number
           AND regional = p_regional;
         RETURN false;
     ELSE
         -- Add star
-        INSERT INTO user_team_stars (user_id, team_number, regional)
+        INSERT INTO public.user_team_stars (user_id, team_number, regional)
         VALUES (auth.uid(), p_team_number, p_regional);
         RETURN true;
     END IF;
@@ -1101,6 +1102,7 @@ CREATE OR REPLACE FUNCTION toggle_admin_star(
 RETURNS BOOLEAN
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = ''
 AS $$
 DECLARE
     v_exists BOOLEAN;
@@ -1108,7 +1110,7 @@ DECLARE
 BEGIN
     -- Check if user is admin
     SELECT is_admin INTO v_is_admin
-    FROM user_profiles
+    FROM public.user_profiles
     WHERE id = auth.uid();
 
     IF NOT v_is_admin THEN
@@ -1117,20 +1119,20 @@ BEGIN
 
     -- Check if admin star already exists
     SELECT EXISTS (
-        SELECT 1 FROM admin_team_stars
+        SELECT 1 FROM public.admin_team_stars
         WHERE team_number = p_team_number
           AND regional = p_regional
     ) INTO v_exists;
 
     IF v_exists THEN
         -- Remove admin star
-        DELETE FROM admin_team_stars
+        DELETE FROM public.admin_team_stars
         WHERE team_number = p_team_number
           AND regional = p_regional;
         RETURN false;
     ELSE
         -- Add admin star
-        INSERT INTO admin_team_stars (team_number, regional, created_by, note)
+        INSERT INTO public.admin_team_stars (team_number, regional, created_by, note)
         VALUES (p_team_number, p_regional, auth.uid(), p_note);
         RETURN true;
     END IF;
@@ -1151,11 +1153,12 @@ CREATE OR REPLACE FUNCTION get_user_starred_teams(
 RETURNS INTEGER[]
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = ''
 AS $$
 BEGIN
     RETURN ARRAY(
         SELECT team_number
-        FROM user_team_stars
+        FROM public.user_team_stars
         WHERE user_id = auth.uid()
           AND regional = p_regional
         ORDER BY team_number
@@ -1177,11 +1180,12 @@ CREATE OR REPLACE FUNCTION get_admin_starred_teams(
 RETURNS INTEGER[]
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = ''
 AS $$
 BEGIN
     RETURN ARRAY(
         SELECT team_number
-        FROM admin_team_stars
+        FROM public.admin_team_stars
         WHERE regional = p_regional
         ORDER BY team_number
     );
@@ -1203,10 +1207,11 @@ CREATE OR REPLACE FUNCTION check_user_star(
 RETURNS BOOLEAN
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = ''
 AS $$
 BEGIN
     RETURN EXISTS (
-        SELECT 1 FROM user_team_stars
+        SELECT 1 FROM public.user_team_stars
         WHERE user_id = auth.uid()
           AND team_number = p_team_number
           AND regional = p_regional
@@ -1229,10 +1234,11 @@ CREATE OR REPLACE FUNCTION check_admin_star(
 RETURNS BOOLEAN
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = ''
 AS $$
 BEGIN
     RETURN EXISTS (
-        SELECT 1 FROM admin_team_stars
+        SELECT 1 FROM public.admin_team_stars
         WHERE team_number = p_team_number
           AND regional = p_regional
     );

@@ -365,8 +365,10 @@ SELECT COUNT(*) as stats_count FROM robot_stats;
 - Public data (stats, robot info) visible to all authenticated users
 - Team stars properly isolated per user with admin override
 
-**Functions use SECURITY DEFINER:**
+**Functions use SECURITY DEFINER with fixed search_path:**
 - Safe execution with proper permissions
+- `SET search_path = ''` prevents search path injection attacks
+- All table references use explicit `public.` schema prefix
 - Prevents SQL injection
 - Validates admin status before privileged operations
 
