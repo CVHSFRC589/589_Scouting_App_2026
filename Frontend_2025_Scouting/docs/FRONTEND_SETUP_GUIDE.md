@@ -355,12 +355,6 @@ Now we'll install all the Node.js packages (libraries) that the project needs.
 Run this command:
 
 ```bash
-npm install
-```
-
-**If you encounter peer dependency errors**, use:
-
-```bash
 npm install --legacy-peer-deps
 ```
 
@@ -421,12 +415,56 @@ This tells npm to use the legacy (npm v6) peer dependency resolution strategy, w
 
 ### 6.1 Start the Expo Development Server
 
-In the VS Code terminal, run:
+**Recommended: Use the Startup Script**
+
+We've created a helper script that checks for common setup issues before starting the app. This is the **preferred way** to start the application.
+
+**In VS Code, open a Bash terminal:**
+1. Click `Terminal` > `New Terminal` (or press `` Ctrl+` ``)
+2. In the terminal dropdown (top-right of terminal panel), select **Git Bash** or **Bash**
+3. Make sure you're in the `Frontend_2025_Scouting` directory
+
+**Run the startup script:**
+
+```bash
+# Normal start (recommended)
+./start_app.sh
+
+# If you have connection issues with your phone
+./start_app.sh --tunnel
+
+# If you need to clear the cache
+./start_app.sh --clear
+
+# Both options together
+./start_app.sh --tunnel --clear
+```
+
+**What the script does:**
+- ✓ Checks that Node.js and npm are installed correctly
+- ✓ Verifies you're in the correct directory
+- ✓ Confirms your `.env` file exists and is configured
+- ✓ Ensures `node_modules` dependencies are installed
+- ✓ Checks if port 8081 is available
+- ✓ Provides helpful error messages referencing this guide
+- ✓ Starts Expo with your chosen options
+
+<details>
+<summary><b>Alternative: Manual Start (if you prefer not to use the script)</b></summary>
+
+If you prefer to start Expo manually without the pre-flight checks:
 
 ```bash
 cd Frontend_2025_Scouting  # if not already in the Frontend_2025_Scouting directory
 npm start
+
+# Or with options:
+npm start -- --tunnel        # Tunnel mode for connection issues
+npm start -- --clear         # Clear cache
+npm start -- --tunnel --clear  # Both options
 ```
+
+</details>
 
 **What's happening?**
 - Expo bundler starts and compiles your JavaScript code
@@ -462,11 +500,17 @@ npm start
 <details>
 <summary>Issue: The application appears to start, but I can't connect my iPhone to run the app</summary>
 
-**Solution:** Try running expo using a network tunnel, which can help solve many common network issues.  
+**Solution:** Try running Expo using a network tunnel, which can help solve many common network issues.
 
-Press Ctrl-C in the terminal window to quit the app, then start over with:
+Press Ctrl-C in the terminal window to quit the app, then start over with tunnel mode:
+
+**Using the startup script (recommended):**
 ```bash
-cd Frontend_2025_Scouting  # if not already in the Frontend_2025_Scouting directory
+./start_app.sh --tunnel
+```
+
+**Or manually:**
+```bash
 npm start -- --tunnel
 ```
 </details>
@@ -523,8 +567,37 @@ npm start -- --tunnel
 **Solution:**
 - Check that your phone and computer are on the same WiFi network
 - Disable any VPN on your computer or phone
-- Try using Tunnel mode: `npm start -- --tunnel` (slower but works through firewalls)
+- Try using Tunnel mode: `./start_app.sh --tunnel` (slower but works through firewalls)
 - Make sure your firewall isn't blocking port 8081
+
+</details>
+
+<details>
+<summary>Error: "ngrok tunnel took too long to connect"</summary>
+
+**What this means:**
+- Tunnel mode uses a service called ngrok to create a network tunnel
+- The connection to ngrok timed out (usually due to network issues or ngrok service problems)
+
+**Solution:**
+1. **First, try without tunnel mode** (if on same WiFi network):
+   ```bash
+   ./start_app.sh
+   ```
+   Your phone and computer must be on the same WiFi for this to work.
+
+2. **If you need tunnel mode:**
+   - Check your internet connection
+   - Try again - ngrok service may be temporarily slow
+   - Wait a few minutes and retry
+   - Check ngrok status: https://status.ngrok.com/
+
+3. **Alternative solution - Use a different connection method:**
+   - Use an iOS Simulator (Mac only) - press `i`
+   - Use an Android Emulator - press `a`
+   - Connect via USB (requires additional setup)
+
+**Note:** Tunnel mode is slower than direct connection and should only be used when you cannot connect your phone to the same WiFi network as your computer.
 
 </details>
 
@@ -717,9 +790,32 @@ You now have the 589 Scouting Frontend running on your device! Here's what you a
 
 ### Starting and Stopping the App
 
+**Using the Startup Script (Recommended):**
 ```bash
-# Start Expo development server from the /589_Scouting_App_2026/Frontend_2025_Scouting directory
-npm start                     
+# From the Frontend_2025_Scouting directory in a Bash terminal
+
+# Normal start with pre-flight checks
+./start_app.sh
+
+# Start with tunnel mode (for connection issues)
+./start_app.sh --tunnel
+
+# Start with cleared cache
+./start_app.sh --clear
+
+# Combine options
+./start_app.sh --tunnel --clear
+
+# Show help
+./start_app.sh --help
+```
+
+**Manual Start (Alternative):**
+```bash
+# From the Frontend_2025_Scouting directory
+
+# Basic start
+npm start
 
 # Start with cache cleared
 npm start -- --clear
@@ -732,7 +828,12 @@ npm start -- --ios
 npm start -- --android
 npm start -- --web
 
-# Stop the server
+# Combine options
+npm start -- --tunnel --clear
+```
+
+**Stop the Server:**
+```bash
 # Press Ctrl+C in the terminal
 ```
 
@@ -801,19 +902,34 @@ eas build --platform android --profile preview
 
 ## Troubleshooting
 
+### General Troubleshooting Tip
+
+**Try the startup script first!** The `start_app.sh` script checks for common issues and provides specific guidance:
+
+```bash
+./start_app.sh
+```
+
+The script will check for missing dependencies, configuration issues, and other common problems before attempting to start the app.
+
 ### App Won't Start or Crashes
 
-1. **Clear the cache:**
+1. **Run the startup script to diagnose issues:**
    ```bash
-   npm start -- --clear
+   ./start_app.sh
    ```
-2. **Reinstall dependencies:**
+2. **Clear the cache:**
+   ```bash
+   ./start_app.sh --clear
+   # or manually: npm start -- --clear
+   ```
+3. **Reinstall dependencies:**
    ```bash
    rm -rf node_modules
    npm install
    ```
-3. **Check for JavaScript errors:** Look in the Expo terminal for error messages
-4. **Check Node.js version:** Run `node --version` (must be 20.0.0 or higher)
+4. **Check for JavaScript errors:** Look in the Expo terminal for error messages
+5. **Check Node.js version:** Run `node --version` (must be 20.0.0 or higher)
 
 ### Cannot Connect to Supabase
 

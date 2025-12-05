@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Pressable, StyleSheet, LayoutAnimation, Platform, UIManager, Image } from 'react-native';
 import { useFonts } from "expo-font";
 import { router } from 'expo-router';
+import { supabaseService } from '../data/supabaseService';
+import { useAuth } from '../contexts/AuthContext';
+import { useCompetition } from '../contexts/CompetitionContext';
 
 
 // Enable LayoutAnimation for Android
@@ -15,16 +18,93 @@ interface StatsAccordionProps {
   stats: RobotStats;
   title?: string;
   sortField?: string; // The currently selected sort field
+  userStarred?: boolean; // Initial user star state
+  adminStarred?: boolean; // Initial admin star state
+  onStarChange?: () => void; // Callback when star state changes
 }
 
-const StatsAccordion: React.FC<StatsAccordionProps> = ({ stats, title = "Robot Statistics", sortField = "Rank" }) => {
+const StatsAccordion: React.FC<StatsAccordionProps> = ({
+  stats,
+  title = "Robot Statistics",
+  sortField = "Rank",
+  userStarred = false,
+  adminStarred = false,
+  onStarChange
+}) => {
   const [expanded, setExpanded] = useState(false);
-  const [starred, setStarred] = useState(false);
+  const [hasUserStar, setHasUserStar] = useState(userStarred);
+  const [hasAdminStar, setHasAdminStar] = useState(adminStarred);
+  const [isTogglingstar, setIsTogglingstar] = useState(false);
+
+  const { userProfile } = useAuth();
+  const { activeCompetition } = useCompetition();
+  const isAdmin = userProfile?.is_admin || false;
+
+  // Update local state when props change
+  useEffect(() => {
+    setHasUserStar(userStarred);
+    setHasAdminStar(adminStarred);
+  }, [userStarred, adminStarred]);
 
   const toggleExpand = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     // console.log("Toggling expand with robot stats: ", stats);
     setExpanded(!expanded);
+  };
+
+  /**
+   * Handle star tap
+   * For admins: First tap = user star, second tap (when user star exists) = admin star
+   * For regular users: Toggle user star only
+   */
+  const handleStarPress = async () => {
+    if (isTogglingstar || !activeCompetition) return;
+
+    setIsTogglingstar(true);
+
+    try {
+      const teamNumber = stats.team_num;
+      const regional = activeCompetition;
+
+      if (isAdmin) {
+        // Admin logic: First tap = user star, second tap = admin star
+        if (!hasUserStar) {
+          // First tap: Add user star
+          const added = await supabaseService.toggleUserStar(teamNumber, regional);
+          setHasUserStar(added);
+          console.log(`Admin added user star for team ${teamNumber}`);
+        } else if (!hasAdminStar) {
+          // Second tap: Add admin star (user star already exists)
+          const added = await supabaseService.toggleAdminStar(teamNumber, regional);
+          setHasAdminStar(added);
+          console.log(`Admin ${added ? 'added' : 'removed'} admin star for team ${teamNumber}`);
+        } else {
+          // Third tap: Remove both stars
+          await supabaseService.toggleAdminStar(teamNumber, regional); // Remove admin star
+          setHasAdminStar(false);
+          await supabaseService.toggleUserStar(teamNumber, regional); // Remove user star
+          setHasUserStar(false);
+          console.log(`Admin removed both stars for team ${teamNumber}`);
+        }
+      } else {
+        // Regular user: Toggle user star only
+        const added = await supabaseService.toggleUserStar(teamNumber, regional);
+        setHasUserStar(added);
+        console.log(`User ${added ? 'added' : 'removed'} star for team ${teamNumber}`);
+      }
+
+      // Notify parent component of change
+      if (onStarChange) {
+        onStarChange();
+      }
+    } catch (error) {
+      console.error('Error toggling star:', error);
+      // Revert optimistic updates on error
+      setHasUserStar(userStarred);
+      setHasAdminStar(adminStarred);
+    } finally {
+      setIsTogglingstar(false);
+    }
   };
 
   const formatNumber = (num: number) => {
@@ -100,10 +180,21 @@ const StatsAccordion: React.FC<StatsAccordionProps> = ({ stats, title = "Robot S
           <Text style={styles.scoreText}>{getSortValue()}</Text>
 
           {/* Star - Third */}
-          <Pressable onPress={() => setStarred(!starred)}>
+          <Pressable onPress={handleStarPress} disabled={isTogglingstar}>
             <Image
-              source={starred ? require('../assets/images/fullStar.png') : require('../assets/images/outlineStar.png')}
-              style={styles.star}
+              source={
+                hasAdminStar
+                  ? require('../assets/images/fullStar.png') // Blue star (we'll tint it blue)
+                  : hasUserStar
+                  ? require('../assets/images/fullStar.png') // Yellow star
+                  : require('../assets/images/outlineStar.png') // Outline star
+              }
+              style={[
+                styles.star,
+                hasAdminStar && styles.blueStar, // Apply blue tint for admin stars
+                hasUserStar && !hasAdminStar && styles.yellowStar, // Apply yellow tint for user stars
+                isTogglingstar && styles.starDisabled // Dimmed when processing
+              ]}
             />
           </Pressable>
 
@@ -176,6 +267,15 @@ const styles = StyleSheet.create({
     width: 35,
     height: 35,
     marginHorizontal: 8,
+  },
+  yellowStar: {
+    tintColor: '#FFD700', // Gold/yellow color for user stars
+  },
+  blueStar: {
+    tintColor: '#0071bc', // Blue color for admin stars (matches app theme)
+  },
+  starDisabled: {
+    opacity: 0.5, // Dim while processing
   },
   arrow:{
     width: 35,

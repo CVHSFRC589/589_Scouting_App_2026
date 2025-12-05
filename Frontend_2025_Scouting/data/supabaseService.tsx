@@ -854,5 +854,122 @@ export const supabaseService = {
       console.error('Error fetching climb stats:', error);
       return { deep: 0, shallow: 0, park: 0, total: 0 };
     }
+  },
+
+  // ============================================================================
+  // TEAM STARRING SYSTEM
+  // ============================================================================
+
+  /**
+   * Toggle user's personal star for a team
+   * @returns true if star was added, false if removed
+   */
+  toggleUserStar: async (teamNumber: number, regional: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.rpc('toggle_user_star', {
+        p_team_number: teamNumber,
+        p_regional: regional
+      });
+
+      if (error) throw error;
+      return data as boolean;
+    } catch (error) {
+      console.error('Error toggling user star:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Toggle admin star for a team (admin only)
+   * @returns true if star was added, false if removed
+   */
+  toggleAdminStar: async (teamNumber: number, regional: string, note?: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.rpc('toggle_admin_star', {
+        p_team_number: teamNumber,
+        p_regional: regional,
+        p_note: note || null
+      });
+
+      if (error) throw error;
+      return data as boolean;
+    } catch (error) {
+      console.error('Error toggling admin star:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get list of team numbers starred by current user
+   * @returns Array of team numbers
+   */
+  getUserStarredTeams: async (regional: string): Promise<number[]> => {
+    try {
+      const { data, error } = await supabase.rpc('get_user_starred_teams', {
+        p_regional: regional
+      });
+
+      if (error) throw error;
+      return (data || []) as number[];
+    } catch (error) {
+      console.error('Error getting user starred teams:', error);
+      return [];
+    }
+  },
+
+  /**
+   * Get list of admin-starred team numbers (visible to all)
+   * @returns Array of team numbers
+   */
+  getAdminStarredTeams: async (regional: string): Promise<number[]> => {
+    try {
+      const { data, error } = await supabase.rpc('get_admin_starred_teams', {
+        p_regional: regional
+      });
+
+      if (error) throw error;
+      return (data || []) as number[];
+    } catch (error) {
+      console.error('Error getting admin starred teams:', error);
+      return [];
+    }
+  },
+
+  /**
+   * Check if current user has starred a specific team
+   * @returns true if user has starred this team
+   */
+  checkUserStar: async (teamNumber: number, regional: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.rpc('check_user_star', {
+        p_team_number: teamNumber,
+        p_regional: regional
+      });
+
+      if (error) throw error;
+      return data as boolean;
+    } catch (error) {
+      console.error('Error checking user star:', error);
+      return false;
+    }
+  },
+
+  /**
+   * Check if a team has an admin star
+   * @returns true if team has admin star
+   */
+  checkAdminStar: async (teamNumber: number, regional: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.rpc('check_admin_star', {
+        p_team_number: teamNumber,
+        p_regional: regional
+      });
+
+      if (error) throw error;
+      return data as boolean;
+    } catch (error) {
+      console.error('Error checking admin star:', error);
+      return false;
+    }
   }
 };
