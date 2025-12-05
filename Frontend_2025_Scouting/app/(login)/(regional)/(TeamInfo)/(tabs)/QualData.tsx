@@ -340,6 +340,7 @@ const QualData = () => {
   }
 
   const chartData = getChartData();
+  
 
   return (
     <>

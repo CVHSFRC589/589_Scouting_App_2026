@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef } from "react";
 import { View, ScrollView, Text, StyleSheet, TouchableOpacity, Dimensions, ActivityIndicator, Image, Pressable, PanResponder } from "react-native";
 import { useGlobalSearchParams, useRouter } from "expo-router";
 import { useFonts } from "expo-font";
-import { BarChart } from "react-native-chart-kit";
 import { robotApiService } from "@/data/processing";
 import AppCache from "@/data/cache";
 import { AppHeader } from "@/components/AppHeader";
@@ -18,6 +17,7 @@ const matchData = () => {
   const isAdmin = userProfile?.is_admin || false;
 
   const [robot, setRobot] = useState<Robot | null>(null);
+  const [availableMatches, setAvailableMatches] = useState<TeamMatchResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [visibleMetrics, setVisibleMetrics] = useState<boolean[]>([true, true, true, true, true, true]);
@@ -131,6 +131,11 @@ const matchData = () => {
         });
 
         setRobot(robotData);
+
+        // Fetch all matches for this team
+        const matches = await robotApiService.fetchAllTeamMatchData(regionalValue, Number(team));
+        console.log('🔍 MatchData - Loaded matches:', matches);
+        setAvailableMatches(matches);
       } catch (err) {
         console.error('❌ MatchData - Error loading data:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch robot data');
@@ -144,51 +149,159 @@ const matchData = () => {
     }
   }, [team]);
 
-  // Prepare chart data - only show visible metrics
-  const getChartData = () => {
-    if (!robot) return null;
-
-    const allDataPoints = [
-      robot.avg_algae_processed || 0,
-      robot.avg_algae_removed || 0,
-      robot.avg_L1 || 0,
-      robot.avg_L2 || 0,
-      robot.avg_L3 || 0,
-      robot.avg_L4 || 0,
-    ];
-
-    const allLabels = legend.map(item => {
-      // Shorten labels for chart display
-      if (item.label === "Algae Processed") return "Processed";
-      if (item.label === "Algae Removed") return "Removed";
-      return item.label;
-    });
-
-    // Filter data based on visible metrics
-    const filteredData = allDataPoints.filter((_, index) => visibleMetrics[index]);
-    const filteredLabels = allLabels.filter((_, index) => visibleMetrics[index]);
-    const filteredColors = legend.filter((_, index) => visibleMetrics[index]).map(item => item.color);
-
-    // If no metrics are visible, show a placeholder
-    if (filteredData.length === 0) {
-      return {
-        labels: ['No Data'],
-        datasets: [{
-          data: [0],
-          colors: [() => '#CCCCCC'],
-        }],
-        visibleCount: 0,
-      };
+  // Render stacked bar chart
+  const renderStackedBarChart = () => {
+    if (availableMatches.length === 0) {
+      return (
+        <View style={styles.noDataContainer}>
+          <Text style={styles.noDataText}>No match data available</Text>
+        </View>
+      );
     }
 
-    return {
-      labels: filteredLabels,
-      datasets: [{
-        data: filteredData,
-        colors: filteredColors.map(color => () => color),
-      }],
-      visibleCount: filteredData.length,
+    const chartHeight = 450;
+    const barWidth = Math.min(60, (screenWidth - 80) / availableMatches.length);
+    const chartWidth = Math.max(screenWidth - 50, barWidth * availableMatches.length + 60);
+    
+    // Find max total to scale bars
+    let maxTotal = 0;
+    availableMatches.forEach(match => {
+      const values = [
+        visibleMetrics[0] ? (match.total_algae_scored || 0) : 0,
+        visibleMetrics[1] ? (match.algae_removed || 0) : 0,
+        visibleMetrics[2] ? (match.total_l1_scored || 0) : 0,
+        visibleMetrics[3] ? (match.total_l2_scored || 0) : 0,
+        visibleMetrics[4] ? (match.total_l3_scored || 0) : 0,
+        visibleMetrics[5] ? (match.total_l4_scored || 0) : 0,
+      ];
+      const total = values.reduce((sum, val) => sum + val, 0);
+      if (total > maxTotal) maxTotal = total;
+    });
+
+    const graphHeight = chartHeight - 70; // Usable height for bars (450 - 15 top - 55 bottom)
+    
+    // Calculate nice y-axis labels
+    const getYAxisLabels = (max: number) => {
+      if (max === 0) return [0, 0, 0, 0, 0];
+      
+      // Determine increment based on scale
+      let increment = 5;
+      if (max > 50) increment = 10;
+      if (max > 100) increment = 20;
+      if (max > 200) increment = 50;
+      if (max > 500) increment = 100;
+      
+      // Round max up to nearest increment
+      const roundedMax = Math.ceil(max / increment) * increment;
+      
+      return [
+        roundedMax,
+        roundedMax * 0.75,
+        roundedMax * 0.5,
+        roundedMax * 0.25,
+        0
+      ];
     };
+
+    const yAxisLabels = getYAxisLabels(maxTotal);
+    const displayMax = yAxisLabels[0];
+    const displayScale = displayMax > 0 ? graphHeight / displayMax : 1;
+
+    return (
+      <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.chartScrollContainer}>
+        <View style={[styles.chartContainer, { width: chartWidth }]}>
+          <View style={styles.chartArea}>
+            {/* Grid lines and bars */}
+            <View style={styles.gridContainer}>
+              {/* Grid lines */}
+              {[0, 1, 2, 3, 4].map((i) => (
+                <View 
+                  key={i} 
+                  style={[
+                    styles.gridLine, 
+                    { top: 15 + (i * ((450 - 15 - 55) / 4)) }
+                  ]} 
+                />
+              ))}
+
+              {/* Y-axis labels - positioned at exact grid line locations */}
+              <View style={styles.yAxisLabelsContainer}>
+                {yAxisLabels.map((label, i) => (
+                  <Text 
+                    key={i} 
+                    style={[
+                      styles.yAxisLabel,
+                      { top: 15 + (i * ((450 - 15 - 55) / 4)) - 6 }
+                    ]}
+                  >
+                    {label}
+                  </Text>
+                ))}
+              </View>
+
+              {/* Bars */}
+              <View style={styles.barsContainer}>
+                {availableMatches.map((match, matchIndex) => {
+                  const values = [
+                    visibleMetrics[0] ? (match.total_algae_scored || 0) : 0,
+                    visibleMetrics[1] ? (match.algae_removed || 0) : 0,
+                    visibleMetrics[2] ? (match.total_l1_scored || 0) : 0,
+                    visibleMetrics[3] ? (match.total_l2_scored || 0) : 0,
+                    visibleMetrics[4] ? (match.total_l3_scored || 0) : 0,
+                    visibleMetrics[5] ? (match.total_l4_scored || 0) : 0,
+                  ];
+
+                  const total = values.reduce((sum, val) => sum + val, 0);
+                  let cumulativeHeight = 0;
+
+                  return (
+                    <View key={matchIndex} style={[styles.barColumn, { width: barWidth }]}>
+                      <View style={styles.barWrapper}>
+                        {values.map((value, i) => {
+                          if (value === 0) return null;
+                          
+                          const segmentHeight = value * displayScale;
+                          const segment = (
+                            <View
+                              key={i}
+                              style={[
+                                styles.barSegment,
+                                {
+                                  height: segmentHeight,
+                                  backgroundColor: legend[i].color,
+                                  bottom: cumulativeHeight,
+                                }
+                              ]}
+                            >
+                              {value > 0 && segmentHeight > 18 && (
+                                <Text style={styles.segmentValue}>{value}</Text>
+                              )}
+                            </View>
+                          );
+                          
+                          cumulativeHeight += segmentHeight;
+                          return segment;
+                        })}
+                        
+                        {/* Total value on top */}
+                        {total > 0 && (
+                          <View style={[styles.totalLabel, { bottom: cumulativeHeight + 2 }]}>
+                            <Text style={styles.totalValue}>{total}</Text>
+                          </View>
+                        )}
+                      </View>
+                      
+                      {/* Match label */}
+                      <Text style={styles.matchLabel}>M{match.match_num || match.match_number}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+    );
   };
 
   // Swipe gesture handler - same pattern as Match Scouting
@@ -251,8 +364,6 @@ const matchData = () => {
     );
   }
 
-  const chartData = getChartData();
-
   return (
     <>
       <AppHeader />
@@ -290,101 +401,109 @@ const matchData = () => {
             </Pressable>
           </View>
 
-          <Text style={styles.subtitle}>Average Performance</Text>
+          <Text style={styles.subtitle}>Match Performance</Text>
 
-        {/* Bar Chart */}
-        {chartData && chartData.datasets[0].data.length > 0 ? (
-          <View style={styles.chartContainer}>
-            <BarChart
-              data={chartData}
-              width={screenWidth - 50}
-              height={375}
-              yAxisLabel=""
-              yAxisSuffix=""
-              withInnerLines={true}
-              withVerticalLabels={true}
-              chartConfig={{
-                backgroundColor: "#ffffff",
-                backgroundGradientFrom: "#ffffff",
-                backgroundGradientTo: "#f0f0f0",
-                decimalPlaces: 1,
-                color: (opacity = 1) => `rgba(0, 113, 188, ${opacity})`,
-                labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                style: {
-                  borderRadius: 16,
-                },
-                propsForBackgroundLines: {
-                  strokeDasharray: '', // solid lines
-                  stroke: 'rgba(0, 0, 0, 0.1)',
-                },
-                propsForLabels: {
-                  fontSize: 10,
-                },
-                paddingLeft: 0,
-                barRadius: 8,
-              }}
-              style={[styles.chart, {
-                marginBottom: 0,
-                marginLeft: -15,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.3,
-                shadowRadius: 5,
-                elevation: 8,
-              }]}
-              fromZero
-              showValuesOnTopOfBars
-              withCustomBarColorFromData
-              verticalLabelRotation={90}
-            />
+          {/* Stacked Bar Chart */}
+          {renderStackedBarChart()}
+
+          {/* Average Values Display - Interactive Legend */}
+          <Text style={styles.subtitle}>Categories</Text>
+          <View style={styles.valuesGrid}>
+            {/* Left Column - Algae metrics */}
+            <View style={styles.valuesColumn}>
+              {legend.slice(0, 2).map((item, index) => {
+                const isVisible = visibleMetrics[index];
+
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.valueRowSmall}
+                    onPress={() => toggleMetric(index)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[
+                      styles.valueColorBox,
+                      { backgroundColor: isVisible ? item.color : '#CCCCCC' }
+                    ]} />
+                    <Text style={[
+                      styles.valueLabelSmall,
+                      !isVisible && styles.valueTextDisabled
+                    ]}>{item.label}</Text>
+                    <Text style={[
+                      styles.checkmark,
+                      !isVisible && styles.valueTextDisabled
+                    ]}>
+                      {isVisible ? '✓' : ''}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Right Column - L1-L4 in 2x2 grid */}
+            <View style={styles.valuesColumn}>
+              <View style={styles.twoColumnRow}>
+                {legend.slice(2, 4).map((item, idx) => {
+                  const index = idx + 2;
+                  const isVisible = visibleMetrics[index];
+
+                  return (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.valueRowSmall}
+                      onPress={() => toggleMetric(index)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[
+                        styles.valueColorBox,
+                        { backgroundColor: isVisible ? item.color : '#CCCCCC' }
+                      ]} />
+                      <Text style={[
+                        styles.valueLabelSmall,
+                        !isVisible && styles.valueTextDisabled
+                      ]}>{item.label}</Text>
+                      <Text style={[
+                        styles.checkmark,
+                        !isVisible && styles.valueTextDisabled
+                      ]}>
+                        {isVisible ? '✓' : ''}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              <View style={styles.twoColumnRow}>
+                {legend.slice(4, 6).map((item, idx) => {
+                  const index = idx + 4;
+                  const isVisible = visibleMetrics[index];
+
+                  return (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.valueRowSmall}
+                      onPress={() => toggleMetric(index)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[
+                        styles.valueColorBox,
+                        { backgroundColor: isVisible ? item.color : '#CCCCCC' }
+                      ]} />
+                      <Text style={[
+                        styles.valueLabelSmall,
+                        !isVisible && styles.valueTextDisabled
+                      ]}>{item.label}</Text>
+                      <Text style={[
+                        styles.checkmark,
+                        !isVisible && styles.valueTextDisabled
+                      ]}>
+                        {isVisible ? '✓' : ''}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
           </View>
-        ) : (
-          <View style={styles.noDataContainer}>
-            <Text style={styles.noDataText}>No data selected</Text>
-          </View>
-        )}
-
-        {/* Average Values Display - Interactive Legend */}
-        <Text style={styles.subtitle}>Average Values</Text>
-        <View style={styles.valuesContainer}>
-          {legend.map((item, index) => {
-            const dataValues = [
-              robot?.avg_algae_processed,
-              robot?.avg_algae_removed,
-              robot?.avg_L1,
-              robot?.avg_L2,
-              robot?.avg_L3,
-              robot?.avg_L4,
-            ];
-
-            const value = dataValues[index];
-            const isVisible = visibleMetrics[index];
-
-            return (
-              <TouchableOpacity
-                key={index}
-                style={styles.valueRow}
-                onPress={() => toggleMetric(index)}
-                activeOpacity={0.7}
-              >
-                <View style={[
-                  styles.valueColorBox,
-                  { backgroundColor: isVisible ? item.color : '#CCCCCC' }
-                ]} />
-                <Text style={[
-                  styles.valueLabel,
-                  !isVisible && styles.valueTextDisabled
-                ]}>{item.label}:</Text>
-                <Text style={[
-                  styles.valueText,
-                  !isVisible && styles.valueTextDisabled
-                ]}>
-                  {value !== null && value !== undefined ? value.toFixed(2) : 'N/A'}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
         </View>
       </ScrollView>
     </>
@@ -394,7 +513,9 @@ const matchData = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 25,
+    paddingTop: 25,
+    paddingBottom: 25,
+    paddingHorizontal: 35, // Increased from 10 for more side space
     backgroundColor: '#E6F4FF',
   },
   centerContainer: {
@@ -423,7 +544,7 @@ const styles = StyleSheet.create({
     width: '100%',
     gap: 15,
     marginTop: 0,
-    marginBottom: 20,
+    marginBottom: 10,
     paddingTop: 0,
     paddingBottom: 0,
   },
@@ -468,40 +589,108 @@ const styles = StyleSheet.create({
     fontSize: 32,
     color: '#0071BC',
     textAlign: "left",
-    marginTop: 10,
-    marginBottom: 10,
+    marginTop: 5,
+    marginBottom: 5,
   },
-  legendContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "flex-start",
-    alignItems: 'center',
-    marginBottom: 15,
-    gap: 10,
-  },
-  legendItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginRight: 15,
-    marginBottom: 10,
-  },
-  legendCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    marginRight: 6,
-  },
-  legendText: {
-    fontSize: 14,
-    color: "#000",
-    fontFamily: 'InterBold',
+  chartScrollContainer: {
+    marginVertical: 10,
+    marginHorizontal: -15, // Extend beyond container padding
   },
   chartContainer: {
-    alignItems: 'center',
-    marginVertical: 20,
+    paddingHorizontal: 5, // Reduced from 10
+    minWidth: '100%',
   },
-  chart: {
-    borderRadius: 16,
+  chartArea: {
+    flexDirection: 'row',
+    height: 450,
+  },
+  yAxisLabelsContainer: {
+    position: 'absolute',
+    left: 5,
+    top: 0,
+    bottom: 0,
+    width: 35,
+    zIndex: 10,
+  },
+  yAxisLabel: {
+    position: 'absolute',
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'left',
+    fontFamily: 'InterBold',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    paddingHorizontal: 2,
+  },
+  gridContainer: {
+    flex: 1,
+    position: 'relative',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 15,
+    paddingLeft: 45, // Make room for y-axis labels
+    marginLeft: -5,
+    marginRight: 5,
+  },
+  gridLine: {
+    position: 'absolute',
+    left: 10,
+    right: 10,
+    height: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  barsContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-around',
+    position: 'absolute',
+    left: 45,
+    right: 15,
+    bottom: 55,
+    height: 380, // 450 - 15 (top) - 55 (bottom)
+  },
+  barColumn: {
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginHorizontal: 3,
+  },
+  barWrapper: {
+    position: 'relative',
+    width: '85%',
+    alignItems: 'center',
+  },
+  barSegment: {
+    position: 'absolute',
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 3,
+  },
+  segmentValue: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontFamily: 'InterBold',
+  },
+  totalLabel: {
+    position: 'absolute',
+    width: '100%',
+    alignItems: 'center',
+  },
+  totalValue: {
+    color: '#0071BC',
+    fontSize: 13,
+    fontFamily: 'InterBold',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  matchLabel: {
+    fontSize: 11,
+    color: '#333',
+    fontFamily: 'InterBold',
+    marginTop: 8,
+    position: 'absolute',
+    bottom: -40,
   },
   noDataContainer: {
     padding: 40,
@@ -513,24 +702,47 @@ const styles = StyleSheet.create({
     color: '#666',
     fontFamily: 'InterBold',
   },
+  valuesGrid: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 20,
+  },
+  valuesColumn: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
   valuesContainer: {
     marginTop: 10,
     marginBottom: 20,
   },
+  twoColumnRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 8,
+  },
   valueRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+  },
+  valueRowSmall: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
     paddingHorizontal: 12,
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   valueColorBox: {
-    width: 16,
-    height: 16,
+    width: 20,
+    height: 20,
     borderRadius: 4,
-    marginRight: 10,
+    marginRight: 12,
   },
   valueLabel: {
     flex: 1,
@@ -538,9 +750,15 @@ const styles = StyleSheet.create({
     color: '#000',
     fontFamily: 'InterBold',
   },
-  valueText: {
-    fontSize: 18,
-    color: '#0071BC',
+  valueLabelSmall: {
+    flex: 1,
+    fontSize: 14,
+    color: '#000',
+    fontFamily: 'InterBold',
+  },
+  checkmark: {
+    fontSize: 0,
+    color: '#4CAF50',
     fontFamily: 'InterBold',
   },
   valueTextDisabled: {
