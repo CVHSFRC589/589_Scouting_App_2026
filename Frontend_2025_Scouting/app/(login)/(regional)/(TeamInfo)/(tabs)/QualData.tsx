@@ -339,6 +339,19 @@ const QualData = () => {
     );
   }
 
+  let None: boolean = false;
+
+  if (matchData) {
+    // None is true if all climb/park fields are falsy (0, false, null, or undefined)
+    if (
+      !matchData.climb_deep &&
+      !matchData.climb_shallow &&
+      !matchData.park
+    ) {
+      None = true;
+    }
+  }
+
   const chartData = getChartData();
   
 
@@ -357,7 +370,7 @@ const QualData = () => {
             >
               <Image style={styles.backButtonIcon} source={require('../../../../../assets/images/back_arrow.png')} />
             </Pressable>
-            <Text style={styles.title}>Team {Array.isArray(team) ? team[0] : team || 'Unknown'}</Text>
+            <Text style={styles.title}>Team{Array.isArray(team) ? team[0] : team || 'Unknown'}</Text>
 
             {/* Star Button */}
             <Pressable onPress={handleStarPress} disabled={isTogglingStar} style={styles.starButton}>
@@ -653,6 +666,10 @@ const QualData = () => {
                   <Text style={styles.badgeLabel}>Park</Text>
                   <Text style={styles.badgeIcon}>{matchData.park ? '✓' : '✗'}</Text>
                 </View>
+                <View style={[styles.capabilityBadge, { backgroundColor: None ? '#4CAF50' : '#F44336' }]}>
+                  <Text style={styles.badgeLabel}>None</Text>
+                  <Text style={styles.badgeIcon}>{None ? '✓' : '✗'}</Text>
+                </View>
               </View>
 
               {/* Status Section */}
@@ -792,8 +809,6 @@ const styles = StyleSheet.create({
     fontSize: 32,
     color: '#0071BC',
     textAlign: "left",
-    marginTop: 10,
-    marginBottom: 10,
   },
   groupHeader: {
     fontFamily: 'InterBold',

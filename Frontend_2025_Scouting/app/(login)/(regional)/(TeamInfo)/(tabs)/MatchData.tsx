@@ -8,6 +8,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { useCompetition } from "@/contexts/CompetitionContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabaseService } from "@/data/supabaseService";
+import Svg, { Path, Circle } from "react-native-svg";
 
 const matchData = () => {
   const { team } = useGlobalSearchParams<{ team: string }>();
@@ -15,12 +16,15 @@ const matchData = () => {
   const { activeCompetition } = useCompetition();
   const { userProfile } = useAuth();
   const isAdmin = userProfile?.is_admin || false;
+  const [matchData, setMatchData] = useState<TeamMatchResponse | null>(null);
+  
 
   const [robot, setRobot] = useState<Robot | null>(null);
   const [availableMatches, setAvailableMatches] = useState<TeamMatchResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [visibleMetrics, setVisibleMetrics] = useState<boolean[]>([true, true, true, true, true, true]);
+  const [visibleClimbTypes, setVisibleClimbTypes] = useState<boolean[]>([true, true, true, true]);
 
   // Star state
   const [hasUserStar, setHasUserStar] = useState(false);
@@ -30,18 +34,31 @@ const matchData = () => {
   const screenWidth = Dimensions.get('window').width;
 
   const legend = [
-    { label: "Algae Processed", color: "#129448" },
-    { label: "Algae Removed", color: "#0cad85" },
+    { label: "Processed", color: "#129448" },
+    { label: "Removed", color: "#0cad85" },
     { label: "L1", color: "#00bcf0" },
     { label: "L2", color: "#11a4ed" },
     { label: "L3", color: "#1f8ded" },
     { label: "L4", color: "#3f65d9" },
   ];
 
+  const climbLegend = [
+    { label: "Deep Climb", color: "#00BCF0" },
+    { label: "Shallow Climb", color: "#0071BC" },
+    { label: "Park", color: "#041347" },
+    { label: "None", color: "#BDBDBD" },
+  ];
+
   const toggleMetric = (index: number) => {
     const newVisibleMetrics = [...visibleMetrics];
     newVisibleMetrics[index] = !newVisibleMetrics[index];
     setVisibleMetrics(newVisibleMetrics);
+  };
+
+  const toggleClimbType = (index: number) => {
+    const newVisibleClimbTypes = [...visibleClimbTypes];
+   newVisibleClimbTypes[index] = !newVisibleClimbTypes[index];
+    setVisibleClimbTypes(newVisibleClimbTypes);
   };
 
   const [fontLoaded] = useFonts({
@@ -148,6 +165,108 @@ const matchData = () => {
       loadRobotData();
     }
   }, [team]);
+
+  const getClimbStats = () => {
+    if (availableMatches.length === 0) return { deepClimb: 0, shallowClimb: 0, park: 0, none: 0};
+
+    // should all be set to zero initially
+    let deepClimb = 0;
+    let shallowClimb = 0;
+    let park = 0;
+    let none = 0;
+
+    // THIS PART DOESNT WOOOORKKK
+    availableMatches.forEach(match => {
+      // Use strict comparison to true, fallback to 0 if undefined
+      if (match.climb_deep === true || match.climb_deep === 1) deepClimb++;
+      else if (match.climb_shallow === true || match.climb_shallow === 1) shallowClimb++;
+      else if (match.park === true || match.park === 1) park++;
+      else none++;
+    });
+    return { deepClimb, shallowClimb, park, none};
+  };
+
+  const renderPieChart = () => {
+    const stats = getClimbStats();
+    // Always include all types, but only show if visible
+    const data = [
+      { value: stats.deepClimb, color: climbLegend[0].color, visible: visibleClimbTypes[0] },
+      { value: stats.shallowClimb, color: climbLegend[1].color, visible: visibleClimbTypes[1] },
+      { value: stats.park, color: climbLegend[2].color, visible: visibleClimbTypes[2] },
+      { value: stats.none, color: climbLegend[3].color, visible: visibleClimbTypes[3] }, // 'None' is not toggleable, always hidden in chart
+    ];
+
+    // Only show slices that are visible and have value > 0
+    const filteredData = data.filter(item => item.visible && item.value > 0);
+   
+
+    // If no visible slices, show "No Data"
+    const total = filteredData.reduce((sum, item) => sum + item.value, 0);
+
+    if (filteredData.length === 0 || total === 0) {
+      return (
+        <View style={styles.pieChartContainer}>
+          <View style={styles.emptyPieChart} />
+          <Text style={styles.emptyPieText}>No Data</Text>
+        </View>
+      );
+    }
+  
+    
+    const size = 160;
+    const center = size / 2;
+    const radius = size / 2 - 5;
+
+    if (filteredData.length === 1) {
+    return (
+      <View style={styles.pieChartContainer}>
+        <Svg width={size} height={size}>
+          <Circle cx={center} cy={center} r={radius} fill={filteredData[0].color} />
+        </Svg>
+      </View>
+    );
+  }
+
+    let currentAngle = -Math.PI / 2; // Start from top
+
+    const paths = filteredData.map((item, index) => {
+      const angle = (item.value / total) * 2 * Math.PI;
+      const startAngle = currentAngle;
+      const endAngle = currentAngle + angle;
+
+      const x1 = center + radius * Math.cos(startAngle);
+      const y1 = center + radius * Math.sin(startAngle);
+      const x2 = center + radius * Math.cos(endAngle);
+      const y2 = center + radius * Math.sin(endAngle);
+
+      const largeArcFlag = angle > Math.PI ? 1 : 0;
+
+      const pathData = [
+        `M ${center} ${center}`,
+        `L ${x1} ${y1}`,
+        `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`,
+        'Z'
+      ].join(' ');
+
+      currentAngle = endAngle;
+
+      return (
+        <Path
+          key={index}
+          d={pathData}
+          fill={item.color}
+        />
+      );
+    });
+
+    return (
+      <View style={styles.pieChartContainer}>
+        <Svg width={size} height={size}>
+          {paths}
+        </Svg>
+      </View>
+    );
+  };
 
   // Render stacked bar chart
   const renderStackedBarChart = () => {
@@ -379,7 +498,7 @@ const matchData = () => {
             >
               <Image style={styles.backButtonIcon} source={require('../../../../../assets/images/back_arrow.png')} />
             </Pressable>
-            <Text style={styles.title}>Team {Array.isArray(team) ? team[0] : team || 'Unknown'}</Text>
+            <Text style={styles.title}>Team{Array.isArray(team) ? team[0] : team || 'Unknown'}</Text>
 
             {/* Star Button */}
             <Pressable onPress={handleStarPress} disabled={isTogglingStar} style={styles.starButton}>
@@ -401,13 +520,12 @@ const matchData = () => {
             </Pressable>
           </View>
 
-          <Text style={styles.subtitle}>Match Performance</Text>
+          <Text style={styles.subtitle}>Total Performance</Text>
 
           {/* Stacked Bar Chart */}
           {renderStackedBarChart()}
 
           {/* Average Values Display - Interactive Legend */}
-          <Text style={styles.subtitle}>Categories</Text>
           <View style={styles.valuesGrid}>
             {/* Left Column - Algae metrics */}
             <View style={styles.valuesColumn}>
@@ -504,6 +622,47 @@ const matchData = () => {
               </View>
             </View>
           </View>
+          <Text style={styles.subtitle}>Average Climb</Text>
+          {/* Pie Chart */}
+          <View style={styles.pieChartSection}>
+          <View style={styles.pieChartContainer}>
+            {renderPieChart()}
+          </View>
+
+          {/* Climb Type Legend */}
+          <View style={styles.pieLegendContainer}>
+            {climbLegend.map((item, index) => {
+              const isVisible = visibleClimbTypes[index];
+
+              return (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.valueRowSmall}
+                  onPress={() => toggleClimbType(index)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[
+                    styles.valueColorBox,
+                    { backgroundColor: isVisible ? item.color : '#CCCCCC' }
+                  ]} />
+                  <Text style={[
+                    styles.valueLabelSmall,
+                    !isVisible && styles.valueTextDisabled
+                  ]}>{item.label}</Text>
+                  <Text style={[
+                    styles.checkmark,
+                    !isVisible && styles.valueTextDisabled
+                  ]}>
+                    {isVisible ? '✓' : ''}
+                  </Text>
+                </TouchableOpacity>
+              );
+            }
+            )}
+          </View>
+        </View>
+        <Text style={styles.subtitle}>Status Count</Text>
+        <Text style={styles.subtitle}>Driver Rating</Text>
         </View>
       </ScrollView>
     </>
@@ -517,27 +676,46 @@ const styles = StyleSheet.create({
     paddingBottom: 25,
     paddingHorizontal: 35, // Increased from 10 for more side space
     backgroundColor: '#E6F4FF',
-  },
-  centerContainer: {
+    },
+    pieChartSection: {
+    marginTop: 10,
+    marginBottom: 20,
+    flexDirection: 'row', // Arrange pie and legend side by side
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    },
+    pieChartContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 5,
+    },
+    pieLegendContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    marginLeft: 10,
+    },
+    centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#E6F4FF',
-  },
-  loadingText: {
+    },
+    loadingText: {
     marginTop: 10,
     fontSize: 16,
     color: '#666',
     fontFamily: 'InterBold',
-  },
-  errorText: {
+    },
+    errorText: {
     fontSize: 16,
     color: '#DC3545',
     textAlign: 'center',
     padding: 20,
     fontFamily: 'InterBold',
-  },
-  titleRow: {
+    },
+    titleRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: 'space-between',
@@ -547,18 +725,18 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     paddingTop: 0,
     paddingBottom: 0,
-  },
-  backButtonInline: {
+    },
+    backButtonInline: {
     width: 20,
     height: 20,
     padding: 0,
     margin: 0,
-  },
-  backButtonIcon: {
+    },
+    backButtonIcon: {
     width: 20,
     height: 20,
-  },
-  title: {
+    },
+    title: {
     fontFamily: "InterBold",
     fontSize: 30,
     textAlign: "left",
@@ -567,32 +745,32 @@ const styles = StyleSheet.create({
     padding: 0,
     lineHeight: 30,
     flex: 1,
-  },
-  starButton: {
+    },
+    starButton: {
     padding: 5,
-  },
-  starIcon: {
+    },
+    starIcon: {
     width: 30,
     height: 30,
-  },
-  yellowStarTint: {
+    },
+    yellowStarTint: {
     tintColor: '#FFD700',
-  },
-  blueStarTint: {
+    },
+    blueStarTint: {
     tintColor: '#0071bc',
-  },
-  starDisabled: {
+    },
+    starDisabled: {
     opacity: 0.5,
-  },
-  subtitle: {
+    },
+    subtitle: {
     fontFamily: 'Koulen',
     fontSize: 32,
     color: '#0071BC',
     textAlign: "left",
     marginTop: 5,
     marginBottom: 5,
-  },
-  chartScrollContainer: {
+    },
+    chartScrollContainer: {
     marginVertical: 10,
     marginHorizontal: -15, // Extend beyond container padding
   },
@@ -705,20 +883,16 @@ const styles = StyleSheet.create({
   valuesGrid: {
     flexDirection: 'row',
     gap: 10,
-    marginBottom: 20,
+    width: '106%',
+    marginLeft: -15,
   },
   valuesColumn: {
     flex: 1,
     justifyContent: 'space-between',
   },
-  valuesContainer: {
-    marginTop: 10,
-    marginBottom: 20,
-  },
   twoColumnRow: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 8,
   },
   valueRow: {
     flexDirection: 'row',
@@ -764,6 +938,19 @@ const styles = StyleSheet.create({
   valueTextDisabled: {
     color: '#CCCCCC',
   },
+  emptyPieChart: {
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: '#FFF',
+  },
+  emptyPieText: {
+    color: '#999999',
+    fontSize: 16,
+    fontFamily: 'InterBold',
+    position: 'absolute',
+  },
+
 });
 
 export default matchData;
