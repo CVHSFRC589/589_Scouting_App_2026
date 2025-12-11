@@ -169,13 +169,11 @@ const matchData = () => {
   const getClimbStats = () => {
     if (availableMatches.length === 0) return { deepClimb: 0, shallowClimb: 0, park: 0, none: 0};
 
-    // should all be set to zero initially
     let deepClimb = 0;
     let shallowClimb = 0;
     let park = 0;
     let none = 0;
 
-    // THIS PART DOESNT WOOOORKKK
     availableMatches.forEach(match => {
       // Use strict comparison to true, fallback to 0 if undefined
       if (match.climb_deep === true || match.climb_deep === 1) deepClimb++;
@@ -185,6 +183,46 @@ const matchData = () => {
     });
     return { deepClimb, shallowClimb, park, none};
   };
+  const getStatusStats = () => {
+    if (availableMatches.length === 0) return { defence: 0, disabled: 0, malfunction: 0, noShow: 0};
+
+    let defence = 0;
+    let disabled = 0;
+    let malfunction = 0;
+    let noShow = 0;
+
+    availableMatches.forEach(match => {
+      // Use strict comparison to true, fallback to 0 if undefined
+      if (match.defence === true || match.defense === 1) defence++;
+      else if (match.disabled === true || match.disabled === 1) disabled++;
+      else if (match.malfunction === true || match.malfunction === 1) malfunction++;
+      else if (match.no_show === true || match.no_show === 1) noShow++;
+    });
+    return { defence, disabled, malfunction, noShow};
+  };
+
+  const statusStats = getStatusStats();
+
+  const getDriverRating = () => {
+    if (availableMatches.length === 0) return { driverRating: 0 };
+
+    let driverRating = 0;
+    let validCount = 0;
+
+    availableMatches.forEach(match => {
+      if (typeof match.driver_rating === 'number' && !isNaN(match.driver_rating)) {
+        driverRating += match.driver_rating;
+        validCount++;
+      }
+    });
+
+    const driverRatingValue = validCount > 0 ? driverRating / validCount : 0;
+    // Round to two decimal places
+    const roundedRating = Math.round(driverRatingValue * 100) / 100;
+    return { driverRating: roundedRating };
+  };
+
+  const rating = getDriverRating();
 
   const renderPieChart = () => {
     const stats = getClimbStats();
@@ -622,7 +660,7 @@ const matchData = () => {
               </View>
             </View>
           </View>
-          <Text style={styles.subtitle}>Average Climb</Text>
+          <Text style={styles.subtitle}>Climb</Text>
           {/* Pie Chart */}
           <View style={styles.pieChartSection}>
           <View style={styles.pieChartContainer}>
@@ -662,7 +700,37 @@ const matchData = () => {
           </View>
         </View>
         <Text style={styles.subtitle}>Status Count</Text>
+        <View style={styles.statusCountContainer}>
+          <View style={styles.valuesGrid}>
+            <View style={styles.valuesColumn}>
+              <View style={styles.twoColumnRow}>
+          <View style={styles.statusValueRow}>
+            <Text style={styles.valueLabel}>Defence: {statusStats.defence}</Text>
+          </View>
+          <View style={styles.statusValueRow}>
+            <Text style={styles.valueLabel}>Disabled: {statusStats.disabled}</Text>
+          </View>
+              </View>
+              <View style={styles.twoColumnRow}>
+          <View style={styles.statusValueRow}>
+            <Text style={styles.valueLabel}>Malfunction: {statusStats.malfunction}</Text>
+          </View>
+          <View style={styles.statusValueRow}>
+            <Text style={styles.valueLabel}>No Show: {statusStats.noShow}</Text>
+          </View>
+              </View>
+            </View>
+          </View>
+        </View>
         <Text style={styles.subtitle}>Driver Rating</Text>
+        <View style={styles.avgClimbContainer}>
+          <View style={styles.valueRow}>
+            <Text style={styles.valueLabel}>
+            Average Rating: {rating.driverRating}
+          </Text>
+          </View>
+        </View>
+
         </View>
       </ScrollView>
     </>
@@ -676,46 +744,44 @@ const styles = StyleSheet.create({
     paddingBottom: 25,
     paddingHorizontal: 35, // Increased from 10 for more side space
     backgroundColor: '#E6F4FF',
-    },
-    pieChartSection: {
-    marginTop: 10,
-    marginBottom: 20,
+  },
+  pieChartSection: {
     flexDirection: 'row', // Arrange pie and legend side by side
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-    },
-    pieChartContainer: {
+  },
+  pieChartContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 5,
-    },
-    pieLegendContainer: {
+  },
+  pieLegendContainer: {
     flex: 1,
     justifyContent: 'center',
     marginLeft: 10,
-    },
-    centerContainer: {
+  },
+  centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#E6F4FF',
-    },
-    loadingText: {
+  },
+  loadingText: {
     marginTop: 10,
     fontSize: 16,
     color: '#666',
     fontFamily: 'InterBold',
-    },
-    errorText: {
+  },
+  errorText: {
     fontSize: 16,
     color: '#DC3545',
     textAlign: 'center',
     padding: 20,
     fontFamily: 'InterBold',
-    },
-    titleRow: {
+  },
+  titleRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: 'space-between',
@@ -725,18 +791,18 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     paddingTop: 0,
     paddingBottom: 0,
-    },
-    backButtonInline: {
+  },
+  backButtonInline: {
     width: 20,
     height: 20,
     padding: 0,
     margin: 0,
-    },
-    backButtonIcon: {
+  },
+  backButtonIcon: {
     width: 20,
     height: 20,
-    },
-    title: {
+  },
+  title: {
     fontFamily: "InterBold",
     fontSize: 30,
     textAlign: "left",
@@ -745,32 +811,32 @@ const styles = StyleSheet.create({
     padding: 0,
     lineHeight: 30,
     flex: 1,
-    },
-    starButton: {
+  },
+  starButton: {
     padding: 5,
-    },
-    starIcon: {
+  },
+  starIcon: {
     width: 30,
     height: 30,
-    },
-    yellowStarTint: {
+  },
+  yellowStarTint: {
     tintColor: '#FFD700',
-    },
-    blueStarTint: {
+  },
+  blueStarTint: {
     tintColor: '#0071bc',
-    },
-    starDisabled: {
+  },
+  starDisabled: {
     opacity: 0.5,
-    },
-    subtitle: {
+  },
+  subtitle: {
     fontFamily: 'Koulen',
     fontSize: 32,
     color: '#0071BC',
     textAlign: "left",
     marginTop: 5,
     marginBottom: 5,
-    },
-    chartScrollContainer: {
+  },
+  chartScrollContainer: {
     marginVertical: 10,
     marginHorizontal: -15, // Extend beyond container padding
   },
@@ -950,7 +1016,22 @@ const styles = StyleSheet.create({
     fontFamily: 'InterBold',
     position: 'absolute',
   },
-
+  statusCountContainer: {
+    width: '95%',
+    marginLeft: 13,
+  },
+  avgClimbContainer: {
+    width: '100%',
+  },
+  statusValueRow: {
+    flex: 1,
+    flexDirection: 'row',
+    paddingVertical: 8,
+    paddingLeft: 10,
+    backgroundColor: '#FFF',
+    borderRadius: 8,
+    marginBottom: 6,
+  },
 });
 
 export default matchData;
